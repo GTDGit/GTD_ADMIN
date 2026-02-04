@@ -19,13 +19,10 @@ npm install
 
 2. Copy environment file:
 ```bash
-cp .env.example .env
+cp .env.local.example .env.local
 ```
 
-3. Edit `.env`:
-```
-NEXT_PUBLIC_API_URL=http://localhost:8080
-```
+3. (Optional) Edit `.env.local` — default `NEXT_PUBLIC_API_URL=/api` uses Next.js proxy to backend; ensure API runs at `http://localhost:8080`.
 
 4. Run development server:
 ```bash
@@ -42,10 +39,15 @@ Default credentials:
 
 ## Build for Production
 
+Set server env so `/api` rewrites to the real API (no CORS needed):
+
 ```bash
+export API_BACKEND_URL=https://api.gtd.co.id
 npm run build
 npm start
 ```
+
+Or on Vercel/hosting: add `API_BACKEND_URL=https://api.gtd.co.id` in project environment variables.
 
 ## Tech Stack
 

@@ -88,8 +88,8 @@ export default function LivenessPage() {
   const detectionIntervalRef = useRef<number | null>(null);
   const animationFrameRef = useRef<number | null>(null);
 
-  // API configuration
-  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+  // API configuration (use /api proxy by default so same-origin, no CORS)
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
   const CLIENT_ID = process.env.NEXT_PUBLIC_CLIENT_ID || '';
   const CLIENT_SECRET = process.env.NEXT_PUBLIC_CLIENT_SECRET || '';
 
