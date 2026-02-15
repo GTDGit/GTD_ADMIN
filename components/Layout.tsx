@@ -1,7 +1,7 @@
 import { ReactNode, useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
-import { Home, Users, Package, Activity, LogOut } from 'lucide-react';
+import { Home, Users, Package, Activity, LogOut, Server } from 'lucide-react';
 
 interface LayoutProps {
   children: ReactNode;
@@ -30,6 +30,7 @@ export default function Layout({ children }: LayoutProps) {
     { href: '/dashboard', icon: Home, label: 'Dashboard' },
     { href: '/clients', icon: Users, label: 'Clients' },
     { href: '/products', icon: Package, label: 'Products' },
+    { href: '/providers', icon: Server, label: 'Providers' },
     { href: '/transactions', icon: Activity, label: 'Transactions' },
   ];
 

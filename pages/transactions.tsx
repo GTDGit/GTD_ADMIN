@@ -34,6 +34,7 @@ interface Transaction {
   admin?: number;
   period?: string;
   digiSkuUsed?: string;
+  providerCode?: string;
   providerRef?: string;
   retryCount: number;
   failedReason?: string;
@@ -562,8 +563,8 @@ export default function Transactions() {
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap">
                         <div className="text-sm font-mono">{trx.skuCode}</div>
-                        {trx.digiSkuUsed && trx.digiSkuUsed !== trx.skuCode && (
-                          <div className="text-xs text-gray-500">SKU: {trx.digiSkuUsed}</div>
+                        {trx.providerCode && (
+                          <div className="text-xs text-gray-500">{trx.providerCode}</div>
                         )}
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap">
@@ -721,8 +722,8 @@ export default function Transactions() {
                   <p className="text-sm font-mono">{selectedTransaction.skuCode}</p>
                 </div>
                 <div className="bg-gray-50 p-3 rounded">
-                  <p className="text-xs text-gray-500">Digiflazz SKU Used</p>
-                  <p className="text-sm font-mono">{selectedTransaction.digiSkuUsed || '-'}</p>
+                  <p className="text-xs text-gray-500">Provider</p>
+                  <p className="text-sm font-mono">{selectedTransaction.providerCode || selectedTransaction.digiSkuUsed || '-'}</p>
                 </div>
               </div>
 
