@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import Layout from '@/components/Layout';
 import api from '@/lib/api';
 import {
@@ -16,6 +16,8 @@ import {
   Loader,
   Eye,
   RotateCcw,
+  Wifi,
+  WifiOff,
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -31,6 +33,8 @@ interface Transaction {
   status: string;
   serialNumber?: string;
   price?: number;
+  buyPrice?: number;
+  sellPrice?: number;
   admin?: number;
   period?: string;
   digiSkuUsed?: string;
@@ -44,6 +48,22 @@ interface Transaction {
   isSandbox: boolean;
   createdAt: string;
   processedAt?: string;
+}
+
+interface SSETransactionEvent {
+  event: string;
+  transactionId: string;
+  referenceId: string;
+  customerNo: string;
+  skuCode: string;
+  type: string;
+  status: string;
+  providerCode?: string;
+  failedReason?: string;
+  amount?: number;
+  buyPrice?: number;
+  sellPrice?: number;
+  timestamp: string;
 }
 
 interface Stats {
@@ -105,6 +125,9 @@ export default function Transactions() {
   const [showStats, setShowStats] = useState(true);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [retrying, setRetrying] = useState<number | null>(null);
+  const [realtimeEnabled, setRealtimeEnabled] = useState(false);
+  const [sseConnected, setSseConnected] = useState(false);
+  const eventSourceRef = useRef<EventSource | null>(null);
   const [pagination, setPagination] = useState<Pagination>({
     page: 1,
     limit: 20,
@@ -182,6 +205,74 @@ export default function Transactions() {
   useEffect(() => {
     fetchStats();
   }, [fetchStats]);
+
+  // SSE Realtime Connection
+  useEffect(() => {
+    if (!realtimeEnabled) {
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+        eventSourceRef.current = null;
+        setSseConnected(false);
+      }
+      return;
+    }
+
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
+    const sseUrl = `${apiUrl}/v1/admin/sse?token=${token}`;
+    const es = new EventSource(sseUrl);
+    eventSourceRef.current = es;
+
+    es.addEventListener('connected', () => {
+      setSseConnected(true);
+    });
+
+    es.addEventListener('transaction', (e) => {
+      try {
+        const data: SSETransactionEvent = JSON.parse(e.data);
+
+        if (data.event === 'transaction.created') {
+          // Refresh the list to get the full transaction object
+          fetchTransactions();
+          fetchStats();
+        } else if (data.event === 'transaction.status_changed') {
+          // Update existing transaction in-place
+          setTransactions((prev) =>
+            prev.map((trx) =>
+              trx.transactionId === data.transactionId
+                ? {
+                    ...trx,
+                    status: data.status,
+                    providerCode: data.providerCode || trx.providerCode,
+                    failedReason: data.failedReason || trx.failedReason,
+                    price: data.amount || trx.price,
+                    buyPrice: data.buyPrice || trx.buyPrice,
+                    sellPrice: data.sellPrice || trx.sellPrice,
+                  }
+                : trx
+            )
+          );
+          // Refresh stats on status change
+          fetchStats();
+        }
+      } catch (err) {
+        console.error('Failed to parse SSE event:', err);
+      }
+    });
+
+    es.onerror = () => {
+      setSseConnected(false);
+      // EventSource auto-reconnects
+    };
+
+    return () => {
+      es.close();
+      eventSourceRef.current = null;
+      setSseConnected(false);
+    };
+  }, [realtimeEnabled, fetchTransactions, fetchStats]);
 
   const handleRetry = async (transactionId: string, id: number) => {
     if (!confirm('Are you sure you want to retry this transaction?')) return;
@@ -272,6 +363,38 @@ export default function Transactions() {
           <p className="text-gray-600 mt-2">Monitor and manage PPOB transactions</p>
         </div>
         <div className="flex gap-2">
+          <button
+            onClick={() => setRealtimeEnabled(!realtimeEnabled)}
+            className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors ${
+              realtimeEnabled
+                ? sseConnected
+                  ? 'bg-green-100 text-green-700 border border-green-300'
+                  : 'bg-yellow-100 text-yellow-700 border border-yellow-300'
+                : 'bg-gray-100 text-gray-700'
+            }`}
+            title={
+              realtimeEnabled
+                ? sseConnected
+                  ? 'Realtime active - click to disable'
+                  : 'Reconnecting...'
+                : 'Enable realtime updates'
+            }
+          >
+            {realtimeEnabled ? (
+              <>
+                <Wifi className="w-5 h-5" />
+                {sseConnected && (
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                  </span>
+                )}
+              </>
+            ) : (
+              <WifiOff className="w-5 h-5" />
+            )}
+            Live
+          </button>
           <button
             onClick={() => setShowStats(!showStats)}
             className={`px-4 py-2 rounded-lg flex items-center gap-2 ${
@@ -727,14 +850,35 @@ export default function Transactions() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div className="bg-gray-50 p-3 rounded">
-                  <p className="text-xs text-gray-500">Price</p>
+                  <p className="text-xs text-gray-500">Amount</p>
                   <p className="text-sm font-medium">{formatPrice(selectedTransaction.price)}</p>
                 </div>
                 <div className="bg-gray-50 p-3 rounded">
+                  <p className="text-xs text-gray-500">Buy Price</p>
+                  <p className="text-sm font-medium">{formatPrice(selectedTransaction.buyPrice)}</p>
+                </div>
+                <div className="bg-gray-50 p-3 rounded">
+                  <p className="text-xs text-gray-500">Sell Price</p>
+                  <p className="text-sm font-medium">{formatPrice(selectedTransaction.sellPrice)}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-gray-50 p-3 rounded">
                   <p className="text-xs text-gray-500">Provider Ref</p>
                   <p className="text-sm font-mono">{selectedTransaction.providerRef || '-'}</p>
+                </div>
+                <div className="bg-gray-50 p-3 rounded">
+                  <p className="text-xs text-gray-500">Environment</p>
+                  <p className="text-sm">
+                    {selectedTransaction.isSandbox ? (
+                      <span className="text-yellow-600">Sandbox</span>
+                    ) : (
+                      <span className="text-green-600">Production</span>
+                    )}
+                  </p>
                 </div>
               </div>
 
