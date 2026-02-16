@@ -214,7 +214,9 @@ export default function ProductMasterPage() {
                 <div>
                   <span className="font-medium">{item.name}</span>
                   {'code' in item && (
-                    <span className="ml-2 text-xs text-gray-500 font-mono">{item.code}</span>
+                    <span className="ml-2 text-xs text-gray-500 font-mono">
+                      {(item as TypeItem).code}
+                    </span>
                   )}
                 </div>
                 <div className="flex gap-1">
