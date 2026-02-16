@@ -9,24 +9,17 @@ interface MasterItem {
   displayOrder?: number;
 }
 
-interface TypeItem {
-  id: number;
-  name: string;
-  code: string;
-  displayOrder?: number;
-}
-
-type Tab = 'categories' | 'brands' | 'types';
+type Tab = 'categories' | 'brands' | 'variants';
 
 export default function ProductMasterPage() {
   const [tab, setTab] = useState<Tab>('categories');
   const [categories, setCategories] = useState<MasterItem[]>([]);
   const [brands, setBrands] = useState<MasterItem[]>([]);
-  const [types, setTypes] = useState<TypeItem[]>([]);
+  const [variants, setVariants] = useState<MasterItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
-  const [editing, setEditing] = useState<MasterItem | TypeItem | null>(null);
-  const [form, setForm] = useState({ name: '', code: '', displayOrder: 0 });
+  const [editing, setEditing] = useState<MasterItem | null>(null);
+  const [form, setForm] = useState({ name: '', displayOrder: 0 });
 
   const fetchCategories = useCallback(async () => {
     try {
@@ -46,10 +39,10 @@ export default function ProductMasterPage() {
     }
   }, []);
 
-  const fetchTypes = useCallback(async () => {
+  const fetchVariants = useCallback(async () => {
     try {
-      const { data } = await api.get('/v1/admin/product-master/types');
-      setTypes(data.data || []);
+      const { data } = await api.get('/v1/admin/product-master/variants');
+      setVariants(data.data || []);
     } catch (e) {
       console.error(e);
     }
@@ -58,28 +51,24 @@ export default function ProductMasterPage() {
   useEffect(() => {
     fetchCategories();
     fetchBrands();
-    fetchTypes();
-  }, [fetchCategories, fetchBrands, fetchTypes]);
+    fetchVariants();
+  }, [fetchCategories, fetchBrands, fetchVariants]);
 
   const refresh = () => {
     fetchCategories();
     fetchBrands();
-    fetchTypes();
+    fetchVariants();
   };
 
   const openAdd = () => {
     setEditing(null);
-    setForm({ name: '', code: '', displayOrder: 0 });
+    setForm({ name: '', displayOrder: 0 });
     setShowModal(true);
   };
 
-  const openEdit = (item: MasterItem | TypeItem) => {
+  const openEdit = (item: MasterItem) => {
     setEditing(item);
-    if ('code' in item) {
-      setForm({ name: item.name, code: item.code, displayOrder: item.displayOrder || 0 });
-    } else {
-      setForm({ name: item.name, code: '', displayOrder: item.displayOrder || 0 });
-    }
+    setForm({ name: item.name, displayOrder: item.displayOrder || 0 });
     setShowModal(true);
   };
 
@@ -113,17 +102,14 @@ export default function ProductMasterPage() {
           });
         }
       } else {
-        const code = form.code || form.name.toLowerCase().replace(/\s+/g, '_');
-        if (editing && 'code' in editing) {
-          await api.put(`${base}/types/${editing.id}`, {
+        if (editing) {
+          await api.put(`${base}/variants/${editing.id}`, {
             name: form.name,
-            code,
             displayOrder: form.displayOrder,
           });
         } else {
-          await api.post(`${base}/types`, {
+          await api.post(`${base}/variants`, {
             name: form.name,
-            code,
             displayOrder: form.displayOrder,
           });
         }
@@ -137,8 +123,8 @@ export default function ProductMasterPage() {
     }
   };
 
-  const handleDelete = async (item: MasterItem | TypeItem) => {
-    if (!confirm(`Hapus "${'name' in item ? item.name : ''}"?`)) return;
+  const handleDelete = async (item: MasterItem) => {
+    if (!confirm(`Hapus "${item.name}"?`)) return;
     setLoading(true);
     try {
       const base = '/v1/admin/product-master';
@@ -147,7 +133,7 @@ export default function ProductMasterPage() {
       } else if (tab === 'brands') {
         await api.delete(`${base}/brands/${item.id}`);
       } else {
-        await api.delete(`${base}/types/${item.id}`);
+        await api.delete(`${base}/variants/${item.id}`);
       }
       refresh();
     } catch (err: any) {
@@ -160,16 +146,18 @@ export default function ProductMasterPage() {
   const tabs: { key: Tab; label: string }[] = [
     { key: 'categories', label: 'Kategori' },
     { key: 'brands', label: 'Brand' },
-    { key: 'types', label: 'Type' },
+    { key: 'variants', label: 'Variants' },
   ];
 
-  const list = tab === 'categories' ? categories : tab === 'brands' ? brands : types;
+  const list = tab === 'categories' ? categories : tab === 'brands' ? brands : variants;
 
   return (
     <Layout>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Kategori, Brand & Type</h1>
-        <p className="text-gray-500 mt-1">Kelola data master untuk produk (dropdown di form Add Product)</p>
+        <h1 className="text-2xl font-bold text-gray-900">Kategori, Brand & Variants</h1>
+        <p className="text-gray-500 mt-1">
+          Kelola data master untuk produk. Type (Prepaid/Postpaid) tetap enum, tidak bisa diubah.
+        </p>
       </div>
 
       <div className="flex gap-2 mb-4">
@@ -211,14 +199,7 @@ export default function ProductMasterPage() {
                 key={item.id}
                 className="flex justify-between items-center px-4 py-3 hover:bg-gray-50"
               >
-                <div>
-                  <span className="font-medium">{item.name}</span>
-                  {'code' in item && (
-                    <span className="ml-2 text-xs text-gray-500 font-mono">
-                      {(item as TypeItem).code}
-                    </span>
-                  )}
-                </div>
+                <span className="font-medium">{item.name}</span>
                 <div className="flex gap-1">
                   <button
                     onClick={() => openEdit(item)}
@@ -259,23 +240,9 @@ export default function ProductMasterPage() {
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
                   required
-                  placeholder={tab === 'types' ? 'e.g. Pulsa Transfer' : 'e.g. Listrik'}
+                  placeholder={tab === 'variants' ? 'e.g. Pulsa Transfer' : 'e.g. Listrik'}
                 />
               </div>
-              {tab === 'types' && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Code *</label>
-                  <input
-                    type="text"
-                    value={form.code}
-                    onChange={(e) => setForm({ ...form, code: e.target.value.toLowerCase().replace(/\s+/g, '_') })}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-mono"
-                    required
-                    placeholder="e.g. pulsa_transfer"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">Format: lowercase, underscore untuk spasi</p>
-                </div>
-              )}
               <div className="flex gap-3 pt-2">
                 <button
                   type="submit"

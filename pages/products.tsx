@@ -39,6 +39,8 @@ interface Product {
   category: string;
   brand: string;
   type: string;
+  variantId?: number | null;
+  variantName?: string;
   admin: number;
   description: string;
   isActive: boolean;
@@ -46,6 +48,12 @@ interface Product {
   updatedAt: string;
   providerCount?: number;
   minPrice?: number;
+}
+
+interface ProductVariant {
+  id: number;
+  name: string;
+  displayOrder?: number;
 }
 
 interface Provider {
@@ -65,6 +73,7 @@ interface Pagination {
 
 interface Filters {
   type: string;
+  variantId: string;
   category: string;
   brand: string;
   search: string;
@@ -84,8 +93,10 @@ export default function Products() {
     totalItems: 0,
     totalPages: 0,
   });
+  const [typeTab, setTypeTab] = useState<'prepaid' | 'postpaid'>('prepaid');
   const [filters, setFilters] = useState<Filters>({
     type: '',
+    variantId: '',
     category: '',
     brand: '',
     search: '',
@@ -100,7 +111,8 @@ export default function Products() {
     name: '',
     category: '',
     brand: '',
-    type: 'prepaid',
+    type: 'prepaid' as 'prepaid' | 'postpaid',
+    variantId: null as number | null,
     admin: 0,
     description: '',
     isActive: true,
@@ -131,7 +143,8 @@ export default function Products() {
       params.append('page', String(pagination.page));
       params.append('limit', String(pagination.limit));
 
-      if (filters.type) params.append('type', filters.type);
+      if (filters.type || typeTab) params.append('type', filters.type || typeTab);
+      if (filters.variantId) params.append('variantId', filters.variantId);
       if (filters.category) params.append('category', filters.category);
       if (filters.brand) params.append('brand', filters.brand);
       if (filters.search) params.append('search', filters.search);
@@ -146,6 +159,8 @@ export default function Products() {
         category: p.category,
         brand: p.brand,
         type: p.type,
+        variantId: p.variantId ?? null,
+        variantName: p.variantName,
         admin: p.admin || 0,
         description: p.description || '',
         isActive: p.productStatus ?? p.isActive,
@@ -169,7 +184,7 @@ export default function Products() {
     } finally {
       setLoading(false);
     }
-  }, [pagination.page, pagination.limit, filters]);
+  }, [pagination.page, pagination.limit, filters, typeTab]); // typeTab change triggers refetch via dependency
 
   const fetchProviders = useCallback(async () => {
     try {
@@ -180,7 +195,7 @@ export default function Products() {
     }
   }, []);
 
-  const [types, setTypes] = useState<{ code: string; name: string }[]>([]);
+  const [variants, setVariants] = useState<ProductVariant[]>([]);
 
   const fetchCategories = useCallback(async () => {
     try {
@@ -200,12 +215,12 @@ export default function Products() {
     }
   }, []);
 
-  const fetchTypes = useCallback(async () => {
+  const fetchVariants = useCallback(async () => {
     try {
-      const { data } = await api.get('/v1/admin/products/types');
-      setTypes(data.data || []);
+      const { data } = await api.get('/v1/admin/products/variants');
+      setVariants(data.data || []);
     } catch (error) {
-      console.error('Failed to fetch types:', error);
+      console.error('Failed to fetch variants:', error);
     }
   }, []);
 
@@ -214,11 +229,10 @@ export default function Products() {
     fetchProviders();
     fetchCategories();
     fetchBrands();
-    fetchTypes();
-  }, [fetchProducts, fetchProviders, fetchCategories, fetchBrands, fetchTypes]);
+    fetchVariants();
+  }, [fetchProducts, fetchProviders, fetchCategories, fetchBrands, fetchVariants]);
 
   const handleFilterChange = (key: keyof Filters, value: string) => {
-    // If changing category, reset brand
     if (key === 'category') {
       setFilters((prev) => ({ ...prev, category: value, brand: '' }));
     } else {
@@ -227,20 +241,45 @@ export default function Products() {
     setPagination((prev) => ({ ...prev, page: 1 }));
   };
 
-  const clearFilters = () => {
-    setFilters({ type: '', category: '', brand: '', search: '', isActive: '' });
+  const setTypeTabAndFetch = (tab: 'prepaid' | 'postpaid') => {
+    setTypeTab(tab);
     setPagination((prev) => ({ ...prev, page: 1 }));
   };
 
-  const hasActiveFilters = Object.values(filters).some((v) => v !== '');
+  const clearFilters = () => {
+    setFilters({ type: '', variantId: '', category: '', brand: '', search: '', isActive: '' });
+    setPagination((prev) => ({ ...prev, page: 1 }));
+  };
+
+  const hasActiveFilters = filters.variantId !== '' || filters.category !== '' || filters.brand !== '' || filters.search !== '' || filters.isActive !== '';
+
+  const openAddProduct = (defaultType?: 'prepaid' | 'postpaid') => {
+    setEditingProduct(null);
+    setProductForm({
+      skuCode: '',
+      name: '',
+      category: '',
+      brand: '',
+      type: defaultType || typeTab,
+      variantId: null,
+      admin: 0,
+      description: '',
+      isActive: true,
+    });
+    setShowProductModal(true);
+  };
 
   const handleProductSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      const payload = {
+        ...productForm,
+        variantId: productForm.variantId && productForm.variantId > 0 ? productForm.variantId : null,
+      };
       if (editingProduct) {
-        await api.put(`/v1/admin/products/${editingProduct.id}`, productForm);
+        await api.put(`/v1/admin/products/${editingProduct.id}`, payload);
       } else {
-        await api.post('/v1/admin/products', productForm);
+        await api.post('/v1/admin/products', payload);
       }
       setShowProductModal(false);
       setEditingProduct(null);
@@ -270,7 +309,8 @@ export default function Products() {
       name: product.name,
       category: product.category,
       brand: product.brand,
-      type: product.type,
+      type: product.type as 'prepaid' | 'postpaid',
+      variantId: product.variantId ?? null,
       admin: product.admin,
       description: product.description,
       isActive: product.isActive,
@@ -284,7 +324,8 @@ export default function Products() {
       name: '',
       category: '',
       brand: '',
-      type: types.length > 0 ? types[0].code : 'prepaid',
+      type: typeTab,
+      variantId: null,
       admin: 0,
       description: '',
       isActive: true,
@@ -440,11 +481,7 @@ export default function Products() {
               <RefreshCw className="w-4 h-4 text-gray-600" />
             </button>
             <button
-              onClick={() => {
-                setEditingProduct(null);
-                resetProductForm();
-                setShowProductModal(true);
-              }}
+              onClick={() => openAddProduct()}
               className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 text-sm font-medium"
             >
               <Plus className="w-4 h-4" />
@@ -453,10 +490,33 @@ export default function Products() {
           </div>
         </div>
 
+        {/* Prepaid / Postpaid Tabs */}
+        <div className="flex gap-2 mb-4">
+          <button
+            onClick={() => setTypeTabAndFetch('prepaid')}
+            className={`px-6 py-2.5 rounded-lg font-medium transition ${
+              typeTab === 'prepaid'
+                ? 'bg-blue-600 text-white'
+                : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
+            }`}
+          >
+            Prepaid
+          </button>
+          <button
+            onClick={() => setTypeTabAndFetch('postpaid')}
+            className={`px-6 py-2.5 rounded-lg font-medium transition ${
+              typeTab === 'postpaid'
+                ? 'bg-blue-600 text-white'
+                : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
+            }`}
+          >
+            Postpaid
+          </button>
+        </div>
+
         {/* Filters */}
         {showFilters && (
           <div className="mt-4 space-y-4">
-            {/* Search and Quick Filters Row */}
             <div className="bg-white border border-gray-200 rounded-lg p-4">
               <div className="flex flex-wrap items-center gap-3">
                 <div className="relative flex-1 min-w-[200px]">
@@ -470,14 +530,14 @@ export default function Products() {
                   />
                 </div>
                 <select
-                  value={filters.type}
-                  onChange={(e) => handleFilterChange('type', e.target.value)}
+                  value={filters.variantId}
+                  onChange={(e) => handleFilterChange('variantId', e.target.value)}
                   className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white"
                 >
-                  <option value="">Semua Type</option>
-                  {types.map((t) => (
-                    <option key={t.code} value={t.code}>
-                      {t.name}
+                  <option value="">Semua Variant</option>
+                  {variants.map((v) => (
+                    <option key={v.id} value={String(v.id)}>
+                      {v.name}
                     </option>
                   ))}
                 </select>
@@ -642,19 +702,16 @@ export default function Products() {
                           <td className="px-4 py-3">
                             <span
                               className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                                product.type === 'prepaid'
-                                  ? 'bg-blue-50 text-blue-700'
-                                  : product.type === 'postpaid'
-                                    ? 'bg-purple-50 text-purple-700'
-                                    : product.type === 'reguler'
-                                      ? 'bg-amber-50 text-amber-700'
-                                      : product.type === 'pulsa_transfer'
-                                        ? 'bg-green-50 text-green-700'
-                                        : 'bg-gray-50 text-gray-700'
+                                product.type === 'prepaid' ? 'bg-blue-50 text-blue-700' : 'bg-purple-50 text-purple-700'
                               }`}
                             >
-                              {product.type === 'pulsa_transfer' ? 'Pulsa Transfer' : product.type.charAt(0).toUpperCase() + product.type.slice(1).replace('_', ' ')}
+                              {product.type === 'prepaid' ? 'Prepaid' : 'Postpaid'}
                             </span>
+                            {product.variantName && (
+                              <span className="ml-1 inline-flex px-2 py-0.5 text-xs rounded bg-gray-100 text-gray-600">
+                                {product.variantName}
+                              </span>
+                            )}
                           </td>
                           <td className="px-4 py-3 text-right">
                             {product.minPrice ? (
@@ -779,20 +836,49 @@ export default function Products() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Type *</label>
-                  <select
-                    value={productForm.type}
-                    onChange={(e) => setProductForm({ ...productForm, type: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
-                    required
-                  >
-                    <option value="">Pilih Type</option>
-                    {types.map((t) => (
-                      <option key={t.code} value={t.code}>
-                        {t.name}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="flex gap-4">
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="productType"
+                        checked={productForm.type === 'prepaid'}
+                        onChange={() => setProductForm({ ...productForm, type: 'prepaid' })}
+                        className="h-4 w-4 text-blue-600"
+                      />
+                      <span className="text-sm">Prepaid</span>
+                    </label>
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="productType"
+                        checked={productForm.type === 'postpaid'}
+                        onChange={() => setProductForm({ ...productForm, type: 'postpaid' })}
+                        className="h-4 w-4 text-blue-600"
+                      />
+                      <span className="text-sm">Postpaid</span>
+                    </label>
+                  </div>
                 </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Variant (opsional)</label>
+                <select
+                  value={productForm.variantId ?? ''}
+                  onChange={(e) =>
+                    setProductForm({
+                      ...productForm,
+                      variantId: e.target.value ? Number(e.target.value) : null,
+                    })
+                  }
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                >
+                  <option value="">Tidak ada</option>
+                  {variants.map((v) => (
+                    <option key={v.id} value={v.id}>
+                      {v.name}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Product Name *</label>
