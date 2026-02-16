@@ -180,6 +180,8 @@ export default function Products() {
     }
   }, []);
 
+  const [types, setTypes] = useState<{ code: string; name: string }[]>([]);
+
   const fetchCategories = useCallback(async () => {
     try {
       const { data } = await api.get('/v1/admin/products/categories');
@@ -189,13 +191,21 @@ export default function Products() {
     }
   }, []);
 
-  const fetchBrands = useCallback(async (category: string) => {
+  const fetchBrands = useCallback(async () => {
     try {
-      const params = category ? `?category=${encodeURIComponent(category)}` : '';
-      const { data } = await api.get(`/v1/admin/products/brands${params}`);
+      const { data } = await api.get('/v1/admin/products/brands');
       setBrands(data.data || []);
     } catch (error) {
       console.error('Failed to fetch brands:', error);
+    }
+  }, []);
+
+  const fetchTypes = useCallback(async () => {
+    try {
+      const { data } = await api.get('/v1/admin/products/types');
+      setTypes(data.data || []);
+    } catch (error) {
+      console.error('Failed to fetch types:', error);
     }
   }, []);
 
@@ -203,12 +213,9 @@ export default function Products() {
     fetchProducts();
     fetchProviders();
     fetchCategories();
-  }, [fetchProducts, fetchProviders, fetchCategories]);
-
-  // Fetch brands when category changes
-  useEffect(() => {
-    fetchBrands(filters.category);
-  }, [filters.category, fetchBrands]);
+    fetchBrands();
+    fetchTypes();
+  }, [fetchProducts, fetchProviders, fetchCategories, fetchBrands, fetchTypes]);
 
   const handleFilterChange = (key: keyof Filters, value: string) => {
     // If changing category, reset brand
@@ -277,7 +284,7 @@ export default function Products() {
       name: '',
       category: '',
       brand: '',
-      type: 'prepaid',
+      type: types.length > 0 ? types[0].code : 'prepaid',
       admin: 0,
       description: '',
       isActive: true,
@@ -468,8 +475,11 @@ export default function Products() {
                   className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white"
                 >
                   <option value="">Semua Type</option>
-                  <option value="prepaid">Prepaid</option>
-                  <option value="postpaid">Postpaid</option>
+                  {types.map((t) => (
+                    <option key={t.code} value={t.code}>
+                      {t.name}
+                    </option>
+                  ))}
                 </select>
                 <select
                   value={filters.isActive}
@@ -634,10 +644,16 @@ export default function Products() {
                               className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
                                 product.type === 'prepaid'
                                   ? 'bg-blue-50 text-blue-700'
-                                  : 'bg-purple-50 text-purple-700'
+                                  : product.type === 'postpaid'
+                                    ? 'bg-purple-50 text-purple-700'
+                                    : product.type === 'reguler'
+                                      ? 'bg-amber-50 text-amber-700'
+                                      : product.type === 'pulsa_transfer'
+                                        ? 'bg-green-50 text-green-700'
+                                        : 'bg-gray-50 text-gray-700'
                               }`}
                             >
-                              {product.type}
+                              {product.type === 'pulsa_transfer' ? 'Pulsa Transfer' : product.type.charAt(0).toUpperCase() + product.type.slice(1).replace('_', ' ')}
                             </span>
                           </td>
                           <td className="px-4 py-3 text-right">
@@ -769,8 +785,12 @@ export default function Products() {
                     className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
                     required
                   >
-                    <option value="prepaid">Prepaid</option>
-                    <option value="postpaid">Postpaid</option>
+                    <option value="">Pilih Type</option>
+                    {types.map((t) => (
+                      <option key={t.code} value={t.code}>
+                        {t.name}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -788,25 +808,35 @@ export default function Products() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Brand *</label>
-                  <input
-                    type="text"
+                  <select
                     value={productForm.brand}
                     onChange={(e) => setProductForm({ ...productForm, brand: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
                     required
-                    placeholder="PLN"
-                  />
+                  >
+                    <option value="">Pilih Brand</option>
+                    {brands.map((b) => (
+                      <option key={b} value={b}>
+                        {b}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Category *</label>
-                  <input
-                    type="text"
+                  <select
                     value={productForm.category}
                     onChange={(e) => setProductForm({ ...productForm, category: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
                     required
-                    placeholder="Listrik"
-                  />
+                  >
+                    <option value="">Pilih Category</option>
+                    {categories.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
               {productForm.type === 'postpaid' && (
