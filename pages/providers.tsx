@@ -438,7 +438,7 @@ export default function Providers() {
                       </div>
                       <button
                         onClick={handleAddSKU}
-                        className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 text-sm font-medium"
+                        className="btn-primary flex items-center gap-2"
                       >
                         <Plus className="w-4 h-4" />
                         Add Mapping
@@ -586,9 +586,9 @@ export default function Providers() {
 
       {/* SKU Modal */}
       {showSKUModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-            <div className="p-5 border-b border-gray-200 flex justify-between items-center">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-xl">
+            <div className="p-5 border-b border-gray-100 flex justify-between items-center">
               <h2 className="text-lg font-semibold">
                 {editingSKU ? 'Edit SKU Mapping' : 'Add SKU Mapping'}
               </h2>

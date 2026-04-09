@@ -482,7 +482,7 @@ export default function Products() {
             </button>
             <button
               onClick={() => openAddProduct()}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 text-sm font-medium"
+              className="btn-primary flex items-center gap-2"
             >
               <Plus className="w-4 h-4" />
               Add Product
@@ -491,23 +491,23 @@ export default function Products() {
         </div>
 
         {/* Prepaid / Postpaid Tabs */}
-        <div className="flex gap-2 mb-4">
+        <div className="flex gap-2 mt-4 mb-4">
           <button
             onClick={() => setTypeTabAndFetch('prepaid')}
-            className={`px-6 py-2.5 rounded-lg font-medium transition ${
+            className={`px-6 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 ${
               typeTab === 'prepaid'
-                ? 'bg-blue-600 text-white'
-                : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
+                ? 'bg-indigo-600 text-white shadow-sm'
+                : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
             }`}
           >
             Prepaid
           </button>
           <button
             onClick={() => setTypeTabAndFetch('postpaid')}
-            className={`px-6 py-2.5 rounded-lg font-medium transition ${
+            className={`px-6 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 ${
               typeTab === 'postpaid'
-                ? 'bg-blue-600 text-white'
-                : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
+                ? 'bg-indigo-600 text-white shadow-sm'
+                : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
             }`}
           >
             Postpaid
@@ -627,10 +627,10 @@ export default function Products() {
       {/* Product List */}
       {loading ? (
         <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-10 w-10 border-2 border-blue-600 border-t-transparent"></div>
+          <div className="animate-spin rounded-full h-10 w-10 border-2 border-indigo-600 border-t-transparent"></div>
         </div>
       ) : products.length === 0 ? (
-        <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+        <div className="card p-12 text-center">
           <Package className="w-12 h-12 mx-auto text-gray-300 mb-3" />
           <p className="text-gray-500 font-medium">Tidak ada produk</p>
           <p className="text-sm text-gray-400 mt-1">Tambah produk untuk memulai</p>
@@ -814,10 +814,10 @@ export default function Products() {
 
       {/* Product Modal */}
       {showProductModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-            <div className="p-5 border-b border-gray-200">
-              <h2 className="text-lg font-semibold">{editingProduct ? 'Edit Product' : 'Add Product'}</h2>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-xl">
+            <div className="p-5 border-b border-gray-100">
+              <h2 className="text-lg font-semibold text-gray-900">{editingProduct ? 'Edit Product' : 'Add Product'}</h2>
             </div>
             <form onSubmit={handleProductSubmit} className="p-5 space-y-4">
               <div className="grid grid-cols-2 gap-4">

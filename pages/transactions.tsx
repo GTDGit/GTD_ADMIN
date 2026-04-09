@@ -359,8 +359,8 @@ export default function Transactions() {
     <Layout>
       <div className="mb-6 flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Transactions</h1>
-          <p className="text-gray-600 mt-2">Monitor and manage PPOB transactions</p>
+          <h1 className="text-2xl font-bold text-gray-900">Transactions</h1>
+          <p className="text-gray-500 mt-1 text-sm">Monitor and manage PPOB transactions</p>
         </div>
         <div className="flex gap-2">
           <button
@@ -435,66 +435,57 @@ export default function Transactions() {
 
       {/* Stats Section */}
       {showStats && stats && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white p-4 rounded-lg shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500">Total Transactions</p>
-                <p className="text-2xl font-bold">{formatNumber(stats.summary.totalTransactions)}</p>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-5 mb-6">
+          <div className="stat-card">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center">
+                <TrendingUp className="w-5 h-5 text-indigo-600" />
               </div>
-              <div className="p-3 bg-blue-100 rounded-full">
-                <TrendingUp className="w-6 h-6 text-blue-600" />
+              <p className="text-sm text-gray-500">Total Transactions</p>
+            </div>
+            <p className="text-xl font-bold text-gray-900">{formatNumber(stats.summary.totalTransactions)}</p>
+          </div>
+          <div className="stat-card">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center">
+                <CheckCircle className="w-5 h-5 text-emerald-600" />
               </div>
+              <p className="text-sm text-gray-500">Success Rate</p>
+            </div>
+            <p className="text-xl font-bold text-emerald-600">{stats.summary.successRate.toFixed(1)}%</p>
+            <div className="mt-2 flex gap-3 text-xs">
+              <span className="text-emerald-600">{formatNumber(stats.summary.successTransactions)} success</span>
+              <span className="text-red-500">{formatNumber(stats.summary.failedTransactions)} failed</span>
             </div>
           </div>
-          <div className="bg-white p-4 rounded-lg shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500">Success Rate</p>
-                <p className="text-2xl font-bold text-green-600">
-                  {stats.summary.successRate.toFixed(1)}%
-                </p>
+          <div className="stat-card">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center">
+                <BarChart3 className="w-5 h-5 text-purple-600" />
               </div>
-              <div className="p-3 bg-green-100 rounded-full">
-                <CheckCircle className="w-6 h-6 text-green-600" />
-              </div>
+              <p className="text-sm text-gray-500">Total Amount</p>
             </div>
-            <div className="mt-2 flex gap-2 text-xs">
-              <span className="text-green-600">{formatNumber(stats.summary.successTransactions)} success</span>
-              <span className="text-red-600">{formatNumber(stats.summary.failedTransactions)} failed</span>
-            </div>
+            <p className="text-xl font-bold text-gray-900">{formatPrice(stats.summary.totalAmount)}</p>
           </div>
-          <div className="bg-white p-4 rounded-lg shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500">Total Amount</p>
-                <p className="text-2xl font-bold">{formatPrice(stats.summary.totalAmount)}</p>
+          <div className="stat-card">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center">
+                <BarChart3 className="w-5 h-5 text-amber-600" />
               </div>
-              <div className="p-3 bg-purple-100 rounded-full">
-                <BarChart3 className="w-6 h-6 text-purple-600" />
-              </div>
+              <p className="text-sm text-gray-500">By Type</p>
             </div>
-          </div>
-          <div className="bg-white p-4 rounded-lg shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500">By Type</p>
-                <div className="flex gap-2 mt-1 text-sm">
-                  <span className="text-blue-600">{formatNumber(stats.byType.prepaid)} prepaid</span>
-                  <span className="text-purple-600">{formatNumber(stats.byType.inquiry)} inquiry</span>
-                </div>
-              </div>
+            <div className="flex gap-3 text-sm">
+              <span className="text-indigo-600 font-medium">{formatNumber(stats.byType.prepaid)} prepaid</span>
+              <span className="text-purple-600 font-medium">{formatNumber(stats.byType.inquiry)} inquiry</span>
             </div>
-            <div className="mt-2 text-xs text-gray-500">
-              {formatNumber(stats.byType.payment)} payment
-            </div>
+            <div className="mt-1 text-xs text-gray-400">{formatNumber(stats.byType.payment)} payment</div>
           </div>
         </div>
       )}
 
       {/* Filters Section */}
       {showFilters && (
-        <div className="bg-white p-4 rounded-lg shadow mb-6">
+        <div className="card p-4 mb-6">
           <div className="flex justify-between items-center mb-4">
             <h3 className="font-medium">Filters</h3>
             {hasActiveFilters && (
@@ -620,10 +611,10 @@ export default function Transactions() {
       )}
 
       {/* Transactions Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className="card overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            <div className="animate-spin rounded-full h-10 w-10 border-2 border-indigo-600 border-t-transparent"></div>
           </div>
         ) : transactions.length === 0 ? (
           <div className="text-center py-12">
@@ -791,8 +782,8 @@ export default function Transactions() {
 
       {/* Transaction Detail Modal */}
       {selectedTransaction && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-xl">
             <div className="flex justify-between items-start mb-4">
               <div>
                 <h2 className="text-xl font-bold">Transaction Details</h2>

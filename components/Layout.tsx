@@ -1,7 +1,7 @@
 import { ReactNode, useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
-import { Home, Users, Package, Activity, LogOut, Server, Tags } from 'lucide-react';
+import { Home, Users, Package, Activity, LogOut, Server, Tags, Shield, ChevronRight } from 'lucide-react';
 
 interface LayoutProps {
   children: ReactNode;
@@ -36,12 +36,24 @@ export default function Layout({ children }: LayoutProps) {
   ];
 
   return (
-    <div className="min-h-screen flex">
-      <aside className="w-64 bg-gray-900 text-white">
-        <div className="p-6">
-          <h1 className="text-xl font-bold">Gerbang Admin</h1>
+    <div className="min-h-screen flex bg-gray-50">
+      {/* Sidebar */}
+      <aside className="w-64 bg-gradient-to-b from-slate-900 via-slate-900 to-indigo-950 text-white flex flex-col fixed inset-y-0 left-0 z-30">
+        {/* Logo */}
+        <div className="px-6 py-5 border-b border-white/10">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-600/30">
+              <Shield className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h1 className="text-base font-bold tracking-tight">Gerbang</h1>
+              <p className="text-[11px] text-slate-400 -mt-0.5">Admin Panel</p>
+            </div>
+          </div>
         </div>
-        <nav className="mt-6">
+
+        {/* Navigation */}
+        <nav className="flex-1 py-4 px-3 space-y-1 overflow-y-auto">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = router.pathname === item.href;
@@ -49,27 +61,34 @@ export default function Layout({ children }: LayoutProps) {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center px-6 py-3 hover:bg-gray-800 transition-colors ${
-                  isActive ? 'bg-gray-800 border-l-4 border-blue-500' : ''
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group ${
+                  isActive
+                    ? 'bg-indigo-600/20 text-indigo-300 shadow-sm'
+                    : 'text-slate-400 hover:text-white hover:bg-white/[0.06]'
                 }`}
               >
-                <Icon className="w-5 h-5 mr-3" />
-                {item.label}
+                <Icon className={`w-[18px] h-[18px] flex-shrink-0 ${isActive ? 'text-indigo-400' : 'text-slate-500 group-hover:text-slate-300'}`} />
+                <span className="flex-1">{item.label}</span>
+                {isActive && <ChevronRight className="w-4 h-4 text-indigo-400/60" />}
               </Link>
             );
           })}
         </nav>
-        <div className="absolute bottom-0 w-64 p-6">
+
+        {/* Logout */}
+        <div className="px-3 py-4 border-t border-white/10">
           <button
             onClick={handleLogout}
-            className="flex items-center text-gray-400 hover:text-white transition-colors"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all duration-200 w-full"
           >
-            <LogOut className="w-5 h-5 mr-3" />
+            <LogOut className="w-[18px] h-[18px]" />
             Logout
           </button>
         </div>
       </aside>
-      <main className="flex-1 p-8">{children}</main>
+
+      {/* Main content */}
+      <main className="flex-1 ml-64 p-8 min-h-screen">{children}</main>
     </div>
   );
 }
