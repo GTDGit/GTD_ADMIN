@@ -549,6 +549,30 @@ export default function Products() {
                   ))}
                 </select>
                 <select
+                  value={filters.category}
+                  onChange={(e) => handleFilterChange('category', e.target.value)}
+                  className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white"
+                >
+                  <option value="">Semua Kategori</option>
+                  {categories.map((cat) => (
+                    <option key={cat} value={cat}>
+                      {cat}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  value={filters.brand}
+                  onChange={(e) => handleFilterChange('brand', e.target.value)}
+                  className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white"
+                >
+                  <option value="">Semua Brand</option>
+                  {brands.map((b) => (
+                    <option key={b} value={b}>
+                      {b}
+                    </option>
+                  ))}
+                </select>
+                <select
                   value={filters.isActive}
                   onChange={(e) => handleFilterChange('isActive', e.target.value)}
                   className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white"
@@ -568,69 +592,6 @@ export default function Products() {
               </div>
             </div>
 
-            {/* Category Tabs */}
-            <div className="card overflow-hidden">
-              <div className="border-b border-gray-200 overflow-x-auto">
-                <div className="flex">
-                  <button
-                    onClick={() => handleFilterChange('category', '')}
-                    className={`px-4 py-2.5 text-sm font-bold whitespace-nowrap border-b-2 transition ${
-                      filters.category === ''
-                        ? 'border-indigo-600 text-indigo-700 bg-indigo-50'
-                        : 'border-transparent hover:text-indigo-600 hover:bg-gray-50'
-                    }`}
-                    style={{ color: filters.category === '' ? undefined : '#111827' }}
-                  >
-                    Semua
-                  </button>
-                  {categories.map((cat) => (
-                    <button
-                      key={cat}
-                      onClick={() => handleFilterChange('category', cat)}
-                      className={`px-4 py-2.5 text-sm font-bold whitespace-nowrap border-b-2 transition ${
-                        filters.category === cat
-                          ? 'border-indigo-600 text-indigo-700 bg-indigo-50'
-                          : 'border-transparent hover:text-indigo-600 hover:bg-gray-50'
-                      }`}
-                      style={{ color: filters.category === cat ? undefined : '#111827' }}
-                    >
-                      {cat}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Brand Pills */}
-              {brands.length > 0 && (
-                <div className="p-3 bg-gray-50 flex flex-wrap gap-2">
-                  <button
-                    onClick={() => handleFilterChange('brand', '')}
-                    className={`px-3 py-1.5 text-sm font-bold rounded-full border transition ${
-                      filters.brand === ''
-                        ? 'bg-indigo-600 text-white border-indigo-600'
-                        : 'bg-white border-gray-300 hover:border-indigo-400 hover:text-indigo-600'
-                    }`}
-                    style={{ color: filters.brand === '' ? undefined : '#111827' }}
-                  >
-                    Semua Brand
-                  </button>
-                  {brands.map((brand) => (
-                    <button
-                      key={brand}
-                      onClick={() => handleFilterChange('brand', brand)}
-                      className={`px-3 py-1.5 text-sm font-bold rounded-full border transition ${
-                        filters.brand === brand
-                          ? 'bg-indigo-600 text-white border-indigo-600'
-                          : 'bg-white border-gray-300 hover:border-indigo-400 hover:text-indigo-600'
-                      }`}
-                      style={{ color: filters.brand === brand ? undefined : '#111827' }}
-                    >
-                      {brand}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
           </div>
         )}
       </div>
