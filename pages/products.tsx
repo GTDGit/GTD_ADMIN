@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import Layout from '@/components/Layout';
 import api from '@/lib/api';
+import { normalizeMasterItems } from '@/lib/product-master';
 import {
   Plus,
   Edit,
@@ -223,7 +224,7 @@ export default function Products() {
   const fetchVariants = useCallback(async () => {
     try {
       const { data } = await api.get('/v1/admin/products/variants');
-      setVariants(data.data || []);
+      setVariants(normalizeMasterItems(data.data));
     } catch (error) {
       console.error('Failed to fetch variants:', error);
     }

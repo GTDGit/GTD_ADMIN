@@ -1,13 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import Layout from '@/components/Layout';
 import api from '@/lib/api';
+import { MasterItem, normalizeMasterItems } from '@/lib/product-master';
 import { Plus, Edit, Trash, Tags, X } from 'lucide-react';
-
-interface MasterItem {
-  id: number;
-  name: string;
-  displayOrder?: number;
-}
 
 type Tab = 'categories' | 'brands' | 'variants';
 
@@ -24,7 +19,7 @@ export default function ProductMasterPage() {
   const fetchCategories = useCallback(async () => {
     try {
       const { data } = await api.get('/v1/admin/product-master/categories');
-      setCategories(data.data || []);
+      setCategories(normalizeMasterItems(data.data));
     } catch (e) {
       console.error(e);
     }
@@ -33,7 +28,7 @@ export default function ProductMasterPage() {
   const fetchBrands = useCallback(async () => {
     try {
       const { data } = await api.get('/v1/admin/product-master/brands');
-      setBrands(data.data || []);
+      setBrands(normalizeMasterItems(data.data));
     } catch (e) {
       console.error(e);
     }
@@ -42,7 +37,7 @@ export default function ProductMasterPage() {
   const fetchVariants = useCallback(async () => {
     try {
       const { data } = await api.get('/v1/admin/product-master/variants');
-      setVariants(data.data || []);
+      setVariants(normalizeMasterItems(data.data));
     } catch (e) {
       console.error(e);
     }
