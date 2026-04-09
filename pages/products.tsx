@@ -48,6 +48,7 @@ interface Product {
   updatedAt: string;
   providerCount?: number;
   minPrice?: number;
+  minAdmin?: number;
 }
 
 interface ProductVariant {
@@ -168,6 +169,7 @@ export default function Products() {
         updatedAt: p.updatedAt || '',
         providerCount: p.providerCount || 0,
         minPrice: p.minPrice || null,
+        minAdmin: p.minAdmin || null,
       }));
 
       setProducts(productList);
@@ -571,11 +573,12 @@ export default function Products() {
                 <div className="flex">
                   <button
                     onClick={() => handleFilterChange('category', '')}
-                    className={`px-4 py-2.5 text-sm font-semibold whitespace-nowrap border-b-2 transition ${
+                    className={`px-4 py-2.5 text-sm font-bold whitespace-nowrap border-b-2 transition ${
                       filters.category === ''
                         ? 'border-indigo-600 text-indigo-700 bg-indigo-50'
-                        : 'border-transparent text-gray-900 hover:text-indigo-600 hover:bg-gray-50'
+                        : 'border-transparent hover:text-indigo-600 hover:bg-gray-50'
                     }`}
+                    style={{ color: filters.category === '' ? undefined : '#111827' }}
                   >
                     Semua
                   </button>
@@ -583,11 +586,12 @@ export default function Products() {
                     <button
                       key={cat}
                       onClick={() => handleFilterChange('category', cat)}
-                      className={`px-4 py-2.5 text-sm font-semibold whitespace-nowrap border-b-2 transition ${
+                      className={`px-4 py-2.5 text-sm font-bold whitespace-nowrap border-b-2 transition ${
                         filters.category === cat
                           ? 'border-indigo-600 text-indigo-700 bg-indigo-50'
-                          : 'border-transparent text-gray-900 hover:text-indigo-600 hover:bg-gray-50'
+                          : 'border-transparent hover:text-indigo-600 hover:bg-gray-50'
                       }`}
+                      style={{ color: filters.category === cat ? undefined : '#111827' }}
                     >
                       {cat}
                     </button>
@@ -600,11 +604,12 @@ export default function Products() {
                 <div className="p-3 bg-gray-50 flex flex-wrap gap-2">
                   <button
                     onClick={() => handleFilterChange('brand', '')}
-                    className={`px-3 py-1.5 text-sm font-semibold rounded-full border transition ${
+                    className={`px-3 py-1.5 text-sm font-bold rounded-full border transition ${
                       filters.brand === ''
                         ? 'bg-indigo-600 text-white border-indigo-600'
-                        : 'bg-white text-gray-900 border-gray-300 hover:border-indigo-400 hover:text-indigo-600'
+                        : 'bg-white border-gray-300 hover:border-indigo-400 hover:text-indigo-600'
                     }`}
+                    style={{ color: filters.brand === '' ? undefined : '#111827' }}
                   >
                     Semua Brand
                   </button>
@@ -612,11 +617,12 @@ export default function Products() {
                     <button
                       key={brand}
                       onClick={() => handleFilterChange('brand', brand)}
-                      className={`px-3 py-1.5 text-sm font-semibold rounded-full border transition ${
+                      className={`px-3 py-1.5 text-sm font-bold rounded-full border transition ${
                         filters.brand === brand
                           ? 'bg-indigo-600 text-white border-indigo-600'
-                          : 'bg-white text-gray-900 border-gray-300 hover:border-indigo-400 hover:text-indigo-600'
+                          : 'bg-white border-gray-300 hover:border-indigo-400 hover:text-indigo-600'
                       }`}
+                      style={{ color: filters.brand === brand ? undefined : '#111827' }}
                     >
                       {brand}
                     </button>
@@ -657,7 +663,7 @@ export default function Products() {
                       Type
                     </th>
                     <th className="text-right px-4 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wide">
-                      Min Price
+                      {typeTab === 'prepaid' ? 'Min Price' : 'Min Admin'}
                     </th>
                     <th className="text-center px-4 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wide">
                       Providers
@@ -718,10 +724,18 @@ export default function Products() {
                             )}
                           </td>
                           <td className="px-4 py-3 text-right">
-                            {product.minPrice ? (
-                              <span className="text-sm font-medium text-green-600">{formatPrice(product.minPrice)}</span>
+                            {typeTab === 'prepaid' ? (
+                              product.minPrice ? (
+                                <span className="text-sm font-medium text-green-600">{formatPrice(product.minPrice)}</span>
+                              ) : (
+                                <span className="text-xs text-gray-400">-</span>
+                              )
                             ) : (
-                              <span className="text-xs text-gray-400">-</span>
+                              product.minAdmin != null ? (
+                                <span className="text-sm font-medium text-blue-600">{formatPrice(product.minAdmin)}</span>
+                              ) : (
+                                <span className="text-xs text-gray-400">-</span>
+                              )
                             )}
                           </td>
                           <td className="px-4 py-3 text-center">
@@ -929,22 +943,7 @@ export default function Products() {
                   </select>
                 </div>
               </div>
-              {productForm.type === 'postpaid' && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Admin Fee (Rp)</label>
-                  <input
-                    type="number"
-                    value={productForm.admin}
-                    onChange={(e) => setProductForm({ ...productForm, admin: Number(e.target.value) })}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
-                    min={0}
-                    placeholder="2500"
-                  />
-                  <p className="text-xs text-gray-400 mt-1">
-                    Admin yang dibebankan ke customer (jika ada)
-                  </p>
-                </div>
-              )}
+              {/* Admin fee is managed at provider SKU level, not product level */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
                 <textarea
@@ -1095,67 +1094,69 @@ export default function Products() {
                     </div>
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Price (Rp) - untuk Prepaid
-                    </label>
-                    <input
-                      type="number"
-                      value={mappingForm.price}
-                      onChange={(e) =>
-                        setMappingForm({ ...mappingForm, price: Number(e.target.value) })
-                      }
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
-                      min={0}
-                    />
-                    <p className="text-xs text-gray-400 mt-1">
-                      Harga beli dari provider (digunakan untuk sorting prepaid)
-                    </p>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
+                  {mappingProduct?.type === 'prepaid' ? (
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Admin (Rp)
+                        Harga Beli (Rp) *
                       </label>
                       <input
                         type="number"
-                        value={mappingForm.admin}
+                        value={mappingForm.price}
                         onChange={(e) =>
-                          setMappingForm({ ...mappingForm, admin: Number(e.target.value) })
+                          setMappingForm({ ...mappingForm, price: Number(e.target.value) })
                         }
                         className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
                         min={0}
                       />
+                      <p className="text-xs text-gray-400 mt-1">
+                        Harga beli dari provider (sorting: termurah duluan)
+                      </p>
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Komisi (Rp)
-                      </label>
-                      <input
-                        type="number"
-                        value={mappingForm.commission}
-                        onChange={(e) =>
-                          setMappingForm({ ...mappingForm, commission: Number(e.target.value) })
-                        }
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
-                        min={0}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Effective Admin Preview */}
-                  <div className="bg-blue-50 border border-blue-100 p-3 rounded-lg">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-blue-700">Effective Admin</span>
-                      <span className="text-lg font-bold text-blue-800">
-                        {formatPrice(mappingForm.admin - mappingForm.commission)}
-                      </span>
-                    </div>
-                    <p className="text-xs text-blue-500 mt-1">
-                      = Admin - Komisi (untuk sorting postpaid)
-                    </p>
-                  </div>
+                  ) : (
+                    <>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Admin Fee (Rp) *
+                          </label>
+                          <input
+                            type="number"
+                            value={mappingForm.admin}
+                            onChange={(e) =>
+                              setMappingForm({ ...mappingForm, admin: Number(e.target.value) })
+                            }
+                            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                            min={0}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Komisi (Rp)
+                          </label>
+                          <input
+                            type="number"
+                            value={mappingForm.commission}
+                            onChange={(e) =>
+                              setMappingForm({ ...mappingForm, commission: Number(e.target.value) })
+                            }
+                            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                            min={0}
+                          />
+                        </div>
+                      </div>
+                      <div className="bg-blue-50 border border-blue-100 p-3 rounded-lg">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-blue-700">Effective Admin</span>
+                          <span className="text-lg font-bold text-blue-800">
+                            {formatPrice(mappingForm.admin - mappingForm.commission)}
+                          </span>
+                        </div>
+                        <p className="text-xs text-blue-500 mt-1">
+                          = Admin - Komisi (sorting: terendah duluan)
+                        </p>
+                      </div>
+                    </>
+                  )}
 
                   <div className="flex gap-4">
                     <label className="flex items-center gap-2">
@@ -1257,29 +1258,30 @@ export default function Products() {
                                 </button>
                               </div>
                             </div>
-                            <div className="mt-3 grid grid-cols-4 gap-4 text-sm">
-                              <div>
-                                <p className="text-xs text-gray-500">Price</p>
-                                <p className="font-medium">{formatPrice(sku.price)}</p>
-                              </div>
-                              <div>
-                                <p className="text-xs text-gray-500">Admin</p>
-                                <p className="font-medium">{formatPrice(sku.admin)}</p>
-                              </div>
-                              <div>
-                                <p className="text-xs text-gray-500">Komisi</p>
-                                <p className="font-medium text-green-600">{formatPrice(sku.commission)}</p>
-                              </div>
-                              <div>
-                                <p className="text-xs text-gray-500">Eff. Admin</p>
-                                <p
-                                  className={`font-bold ${
-                                    effectiveAdmin <= 0 ? 'text-green-700' : 'text-orange-600'
-                                  }`}
-                                >
-                                  {formatPrice(effectiveAdmin)}
-                                </p>
-                              </div>
+                            <div className="mt-3 flex gap-6 text-sm">
+                              {mappingProduct?.type === 'prepaid' ? (
+                                <div>
+                                  <p className="text-xs text-gray-500">Harga Beli</p>
+                                  <p className="font-bold text-green-700">{formatPrice(sku.price)}</p>
+                                </div>
+                              ) : (
+                                <>
+                                  <div>
+                                    <p className="text-xs text-gray-500">Admin</p>
+                                    <p className="font-medium">{formatPrice(sku.admin)}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs text-gray-500">Komisi</p>
+                                    <p className="font-medium text-green-600">{formatPrice(sku.commission)}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs text-gray-500">Eff. Admin</p>
+                                    <p className={`font-bold ${effectiveAdmin <= 0 ? 'text-green-700' : 'text-orange-600'}`}>
+                                      {formatPrice(effectiveAdmin)}
+                                    </p>
+                                  </div>
+                                </>
+                              )}
                             </div>
                             <div className="mt-2 flex gap-2">
                               {sku.isActive ? (

@@ -49,6 +49,7 @@ interface ProviderSKU {
   providerName: string;
   productName: string;
   skuCode: string;
+  productType: string;
   isBackup: boolean;
   updatedAt: string;
 }
@@ -95,6 +96,7 @@ export default function Providers() {
   const [productSearch, setProductSearch] = useState('');
   const [productResults, setProductResults] = useState<any[]>([]);
   const [searchingProducts, setSearchingProducts] = useState(false);
+  const [skuProductType, setSkuProductType] = useState<string>('');
 
   const fetchProviders = useCallback(async () => {
     setLoading(true);
@@ -178,6 +180,7 @@ export default function Providers() {
   const handleAddSKU = () => {
     if (!selectedProvider) return;
     setEditingSKU(null);
+    setSkuProductType('');
     setProductSearch('');
     setProductResults([]);
     setSkuForm({
@@ -196,6 +199,7 @@ export default function Providers() {
 
   const handleEditSKU = (sku: ProviderSKU) => {
     setEditingSKU(sku);
+    setSkuProductType(sku.productType || '');
     setSkuForm({
       providerId: sku.providerId,
       productId: sku.productId,
@@ -474,17 +478,14 @@ export default function Providers() {
                           <th className="text-left px-4 py-3 text-xs font-semibold text-gray-600 uppercase">
                             Provider SKU
                           </th>
-                          <th className="text-right px-4 py-3 text-xs font-semibold text-gray-600 uppercase">
-                            Price
+                          <th className="text-center px-4 py-3 text-xs font-semibold text-gray-600 uppercase">
+                            Type
                           </th>
                           <th className="text-right px-4 py-3 text-xs font-semibold text-gray-600 uppercase">
-                            Admin
+                            Harga/Admin
                           </th>
                           <th className="text-right px-4 py-3 text-xs font-semibold text-gray-600 uppercase">
                             Komisi
-                          </th>
-                          <th className="text-right px-4 py-3 text-xs font-semibold text-gray-600 uppercase">
-                            Eff. Admin
                           </th>
                           <th className="text-center px-4 py-3 text-xs font-semibold text-gray-600 uppercase">
                             Status
@@ -496,6 +497,7 @@ export default function Providers() {
                       </thead>
                       <tbody className="divide-y divide-gray-100">
                         {providerSKUs.map((sku) => {
+                          const isPrepaid = sku.productType === 'prepaid';
                           const effectiveAdmin = sku.admin - sku.commission;
                           return (
                             <tr key={sku.id} className="hover:bg-gray-50 transition">
@@ -511,23 +513,33 @@ export default function Providers() {
                                   </p>
                                 )}
                               </td>
-                              <td className="px-4 py-3 text-right text-sm font-medium">
-                                {formatPrice(sku.price)}
-                              </td>
-                              <td className="px-4 py-3 text-right text-sm text-gray-600">
-                                {formatPrice(sku.admin)}
-                              </td>
-                              <td className="px-4 py-3 text-right text-sm text-green-600 font-medium">
-                                {formatPrice(sku.commission)}
+                              <td className="px-4 py-3 text-center">
+                                <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${
+                                  isPrepaid ? 'bg-blue-50 text-blue-700' : 'bg-purple-50 text-purple-700'
+                                }`}>
+                                  {isPrepaid ? 'Prepaid' : 'Postpaid'}
+                                </span>
                               </td>
                               <td className="px-4 py-3 text-right">
-                                <span
-                                  className={`text-sm font-bold ${
-                                    effectiveAdmin <= 0 ? 'text-green-700' : 'text-orange-600'
-                                  }`}
-                                >
-                                  {formatPrice(effectiveAdmin)}
-                                </span>
+                                {isPrepaid ? (
+                                  <span className="text-sm font-bold text-green-700">
+                                    {formatPrice(sku.price)}
+                                  </span>
+                                ) : (
+                                  <div>
+                                    <span className={`text-sm font-bold ${effectiveAdmin <= 0 ? 'text-green-700' : 'text-orange-600'}`}>
+                                      {formatPrice(effectiveAdmin)}
+                                    </span>
+                                    <p className="text-xs text-gray-400">admin {formatPrice(sku.admin)}</p>
+                                  </div>
+                                )}
+                              </td>
+                              <td className="px-4 py-3 text-right text-sm">
+                                {isPrepaid ? (
+                                  <span className="text-gray-400">-</span>
+                                ) : (
+                                  <span className="text-green-600 font-medium">{formatPrice(sku.commission)}</span>
+                                )}
                               </td>
                               <td className="px-4 py-3">
                                 <div className="flex items-center justify-center gap-1">
@@ -622,7 +634,8 @@ export default function Providers() {
                           type="button"
                           onClick={() => {
                             setSkuForm({ ...skuForm, productId: p.id });
-                            setProductSearch(`${p.skuCode} - ${p.name}`);
+                            setSkuProductType(p.type || '');
+                            setProductSearch(`${p.skuCode} - ${p.name || p.productName}`);
                             setProductResults([]);
                           }}
                           className={`w-full text-left px-3 py-2 hover:bg-blue-50 text-sm border-b border-gray-100 last:border-b-0 ${
@@ -632,8 +645,10 @@ export default function Providers() {
                           <span className="font-mono text-xs bg-gray-100 px-1.5 py-0.5 rounded mr-2">
                             {p.skuCode}
                           </span>
-                          {p.name}
-                          <span className="text-xs text-gray-400 ml-2">{p.type}</span>
+                          {p.name || p.productName}
+                          <span className={`text-xs ml-2 px-1.5 py-0.5 rounded ${
+                            p.type === 'prepaid' ? 'bg-blue-50 text-blue-700' : 'bg-purple-50 text-purple-700'
+                          }`}>{p.type}</span>
                         </button>
                       ))}
                     </div>
@@ -683,53 +698,57 @@ export default function Providers() {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Price (Rp) - untuk Prepaid
-                </label>
-                <input
-                  type="number"
-                  value={skuForm.price}
-                  onChange={(e) => setSkuForm({ ...skuForm, price: Number(e.target.value) })}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
-                  min={0}
-                />
-                <p className="text-xs text-gray-400 mt-1">Harga beli dari provider</p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
+              {skuProductType === 'postpaid' ? (
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Admin Fee (Rp) *</label>
+                      <input
+                        type="number"
+                        value={skuForm.admin}
+                        onChange={(e) => setSkuForm({ ...skuForm, admin: Number(e.target.value) })}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                        min={0}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Komisi (Rp)</label>
+                      <input
+                        type="number"
+                        value={skuForm.commission}
+                        onChange={(e) => setSkuForm({ ...skuForm, commission: Number(e.target.value) })}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                        min={0}
+                      />
+                    </div>
+                  </div>
+                  <div className="bg-blue-50 border border-blue-100 p-3 rounded-lg">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-blue-700">Effective Admin</span>
+                      <span className="text-lg font-bold text-blue-800">
+                        {formatPrice(skuForm.admin - skuForm.commission)}
+                      </span>
+                    </div>
+                    <p className="text-xs text-blue-500 mt-1">= Admin - Komisi (sorting: terendah duluan)</p>
+                  </div>
+                </>
+              ) : (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Admin (Rp)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Harga Beli (Rp) *
+                  </label>
                   <input
                     type="number"
-                    value={skuForm.admin}
-                    onChange={(e) => setSkuForm({ ...skuForm, admin: Number(e.target.value) })}
+                    value={skuForm.price}
+                    onChange={(e) => setSkuForm({ ...skuForm, price: Number(e.target.value) })}
                     className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
                     min={0}
                   />
+                  <p className="text-xs text-gray-400 mt-1">
+                    {skuProductType ? 'Harga beli dari provider (sorting: termurah duluan)' : 'Pilih product terlebih dahulu untuk melihat field yang sesuai'}
+                  </p>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Komisi (Rp)</label>
-                  <input
-                    type="number"
-                    value={skuForm.commission}
-                    onChange={(e) => setSkuForm({ ...skuForm, commission: Number(e.target.value) })}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
-                    min={0}
-                  />
-                </div>
-              </div>
-
-              {/* Effective Admin Preview */}
-              <div className="bg-blue-50 border border-blue-100 p-3 rounded-lg">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-blue-700">Effective Admin</span>
-                  <span className="text-lg font-bold text-blue-800">
-                    {formatPrice(skuForm.admin - skuForm.commission)}
-                  </span>
-                </div>
-                <p className="text-xs text-blue-500 mt-1">= Admin - Komisi (untuk sorting postpaid)</p>
-              </div>
+              )}
 
               <div className="flex gap-4">
                 <label className="flex items-center gap-2">
