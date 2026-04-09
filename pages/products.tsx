@@ -199,21 +199,24 @@ export default function Products() {
 
   const fetchCategories = useCallback(async () => {
     try {
-      const { data } = await api.get('/v1/admin/products/categories');
+      const { data } = await api.get(`/v1/admin/products/categories?type=${typeTab}`);
       setCategories(data.data || []);
     } catch (error) {
       console.error('Failed to fetch categories:', error);
     }
-  }, []);
+  }, [typeTab]);
 
   const fetchBrands = useCallback(async () => {
     try {
-      const { data } = await api.get('/v1/admin/products/brands');
+      const params = new URLSearchParams();
+      params.append('type', typeTab);
+      if (filters.category) params.append('category', filters.category);
+      const { data } = await api.get(`/v1/admin/products/brands?${params.toString()}`);
       setBrands(data.data || []);
     } catch (error) {
       console.error('Failed to fetch brands:', error);
     }
-  }, []);
+  }, [typeTab, filters.category]);
 
   const fetchVariants = useCallback(async () => {
     try {
@@ -243,6 +246,7 @@ export default function Products() {
 
   const setTypeTabAndFetch = (tab: 'prepaid' | 'postpaid') => {
     setTypeTab(tab);
+    setFilters((prev) => ({ ...prev, category: '', brand: '' }));
     setPagination((prev) => ({ ...prev, page: 1 }));
   };
 
@@ -562,15 +566,15 @@ export default function Products() {
             </div>
 
             {/* Category Tabs */}
-            <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+            <div className="card overflow-hidden">
               <div className="border-b border-gray-200 overflow-x-auto">
                 <div className="flex">
                   <button
                     onClick={() => handleFilterChange('category', '')}
-                    className={`px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 transition ${
+                    className={`px-4 py-2.5 text-sm font-semibold whitespace-nowrap border-b-2 transition ${
                       filters.category === ''
-                        ? 'border-blue-600 text-blue-600 bg-blue-50/50'
-                        : 'border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                        ? 'border-indigo-600 text-indigo-700 bg-indigo-50'
+                        : 'border-transparent text-gray-900 hover:text-indigo-600 hover:bg-gray-50'
                     }`}
                   >
                     Semua
@@ -579,10 +583,10 @@ export default function Products() {
                     <button
                       key={cat}
                       onClick={() => handleFilterChange('category', cat)}
-                      className={`px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 transition ${
+                      className={`px-4 py-2.5 text-sm font-semibold whitespace-nowrap border-b-2 transition ${
                         filters.category === cat
-                          ? 'border-blue-600 text-blue-600 bg-blue-50/50'
-                          : 'border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                          ? 'border-indigo-600 text-indigo-700 bg-indigo-50'
+                          : 'border-transparent text-gray-900 hover:text-indigo-600 hover:bg-gray-50'
                       }`}
                     >
                       {cat}
@@ -593,13 +597,13 @@ export default function Products() {
 
               {/* Brand Pills */}
               {brands.length > 0 && (
-                <div className="p-3 bg-gray-50/50 flex flex-wrap gap-2">
+                <div className="p-3 bg-gray-50 flex flex-wrap gap-2">
                   <button
                     onClick={() => handleFilterChange('brand', '')}
-                    className={`px-3 py-1.5 text-xs font-medium rounded-full border transition ${
+                    className={`px-3 py-1.5 text-sm font-semibold rounded-full border transition ${
                       filters.brand === ''
-                        ? 'bg-blue-600 text-white border-blue-600'
-                        : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:text-blue-600'
+                        ? 'bg-indigo-600 text-white border-indigo-600'
+                        : 'bg-white text-gray-900 border-gray-300 hover:border-indigo-400 hover:text-indigo-600'
                     }`}
                   >
                     Semua Brand
@@ -608,10 +612,10 @@ export default function Products() {
                     <button
                       key={brand}
                       onClick={() => handleFilterChange('brand', brand)}
-                      className={`px-3 py-1.5 text-xs font-medium rounded-full border transition ${
+                      className={`px-3 py-1.5 text-sm font-semibold rounded-full border transition ${
                         filters.brand === brand
-                          ? 'bg-blue-600 text-white border-blue-600'
-                          : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:text-blue-600'
+                          ? 'bg-indigo-600 text-white border-indigo-600'
+                          : 'bg-white text-gray-900 border-gray-300 hover:border-indigo-400 hover:text-indigo-600'
                       }`}
                     >
                       {brand}
