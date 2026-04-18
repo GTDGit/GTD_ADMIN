@@ -1,7 +1,7 @@
 import { ReactNode, useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
-import { Home, Users, Package, Activity, LogOut, Server, Tags, Shield, ChevronRight } from 'lucide-react';
+import { Home, Users, Package, Activity, LogOut, Server, Tags, Shield, ChevronRight, CreditCard, Wallet } from 'lucide-react';
 
 interface LayoutProps {
   children: ReactNode;
@@ -33,6 +33,8 @@ export default function Layout({ children }: LayoutProps) {
     { href: '/product-master', icon: Tags, label: 'Kategori & Brand' },
     { href: '/providers', icon: Server, label: 'Providers' },
     { href: '/transactions', icon: Activity, label: 'Transactions' },
+    { href: '/payments', icon: CreditCard, label: 'Payments' },
+    { href: '/payment-methods', icon: Wallet, label: 'Payment Methods' },
   ];
 
   return (

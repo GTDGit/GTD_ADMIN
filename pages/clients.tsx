@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import Layout from '@/components/Layout';
 import api from '@/lib/api';
-import { Plus, Edit, Key, Copy, Check, X, Users, Globe, Shield } from 'lucide-react';
+import { Plus, Edit, Key, Copy, Check, X, Users, Globe, Shield, CreditCard as CreditCardIcon } from 'lucide-react';
 
 export default function Clients() {
   const [clients, setClients] = useState<any[]>([]);
@@ -13,6 +13,7 @@ export default function Clients() {
     clientId: '',
     name: '',
     callbackUrl: '',
+    paymentCallbackUrl: '',
     ipWhitelist: '',
   });
 
@@ -47,7 +48,7 @@ export default function Clients() {
 
       setShowModal(false);
       setEditingClient(null);
-      setFormData({ clientId: '', name: '', callbackUrl: '', ipWhitelist: '' });
+      setFormData({ clientId: '', name: '', callbackUrl: '', paymentCallbackUrl: '', ipWhitelist: '' });
       fetchClients();
     } catch (error) {
       console.error('Failed to save client:', error);
@@ -60,6 +61,7 @@ export default function Clients() {
       clientId: client.clientId,
       name: client.name,
       callbackUrl: client.callbackUrl,
+      paymentCallbackUrl: client.paymentCallbackUrl || '',
       ipWhitelist: client.ipWhitelist?.join(', ') || '',
     });
     setShowModal(true);
@@ -101,7 +103,7 @@ export default function Clients() {
         <button
           onClick={() => {
             setEditingClient(null);
-            setFormData({ clientId: '', name: '', callbackUrl: '', ipWhitelist: '' });
+            setFormData({ clientId: '', name: '', callbackUrl: '', paymentCallbackUrl: '', ipWhitelist: '' });
             setShowModal(true);
           }}
           className="btn-primary flex items-center gap-2"
@@ -195,12 +197,52 @@ export default function Clients() {
                   </div>
                 </div>
 
+                {/* Payment webhook secret */}
+                {(client.paymentCallbackSecret || client.paymentCallbackUrl) && (
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">Payment Webhook Secret</p>
+                      <p className="font-mono text-sm text-gray-700 truncate">
+                        {client.paymentCallbackSecret ? `${client.paymentCallbackSecret.substring(0, 36)}...` : 'Not generated'}
+                      </p>
+                    </div>
+                    <div className="flex gap-1 ml-3">
+                      {client.paymentCallbackSecret && (
+                        <button
+                          onClick={() => copyToClipboard(client.paymentCallbackSecret, `paysec-${client.id}`)}
+                          className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
+                          title="Copy"
+                        >
+                          {copiedKey === `paysec-${client.id}` ? (
+                            <Check className="w-4 h-4 text-emerald-600" />
+                          ) : (
+                            <Copy className="w-4 h-4 text-gray-400" />
+                          )}
+                        </button>
+                      )}
+                      <button
+                        onClick={() => handleRegenerate(client.id, 'payment_webhook')}
+                        className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
+                        title="Regenerate payment webhook secret"
+                      >
+                        <Key className="w-4 h-4 text-gray-400" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {/* Callback & IP info */}
                 <div className="flex flex-wrap gap-4 pt-3 border-t border-gray-100">
                   <div className="flex items-center gap-2 text-sm text-gray-500">
                     <Globe className="w-3.5 h-3.5" />
                     <span>{client.callbackUrl || 'No callback URL'}</span>
                   </div>
+                  {client.paymentCallbackUrl && (
+                    <div className="flex items-center gap-2 text-sm text-gray-500">
+                      <CreditCardIcon className="w-3.5 h-3.5" />
+                      <span>{client.paymentCallbackUrl}</span>
+                    </div>
+                  )}
                   {client.ipWhitelist?.length > 0 && (
                     <div className="flex items-center gap-2 text-sm text-gray-500">
                       <Shield className="w-3.5 h-3.5" />
@@ -263,6 +305,17 @@ export default function Clients() {
                   required
                   placeholder="https://example.com/webhook"
                 />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Payment Callback URL (optional)</label>
+                <input
+                  type="url"
+                  value={formData.paymentCallbackUrl}
+                  onChange={(e) => setFormData({ ...formData, paymentCallbackUrl: e.target.value })}
+                  className="input-field"
+                  placeholder="https://example.com/payment-webhook"
+                />
+                <p className="text-xs text-gray-400 mt-1">Leave empty to reuse the general callback URL for payment events.</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">IP Whitelist</label>
