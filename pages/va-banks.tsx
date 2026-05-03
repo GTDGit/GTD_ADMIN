@@ -18,7 +18,7 @@ interface BankCode {
 
 type StatusFilter = 'all' | 'active' | 'inactive' | 'enabled' | 'disabled';
 
-export default function DisbursementMethods() {
+export default function VABanks() {
   const [banks, setBanks] = useState<BankCode[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -50,7 +50,7 @@ export default function DisbursementMethods() {
         shortName: editing.shortName,
         name: editing.name,
         swiftCode: editing.swiftCode || '',
-        supportDisbursement: editing.support_disbursement,
+        supportVa: editing.support_va,
         isActive: editing.is_active,
       });
       setEditing(null);
@@ -62,12 +62,12 @@ export default function DisbursementMethods() {
     }
   };
 
-  const toggleField = async (bank: BankCode, field: 'support_disbursement' | 'is_active') => {
+  const toggleField = async (bank: BankCode, field: 'support_va' | 'is_active') => {
     const next = !bank[field];
     setBanks((prev) => prev.map((b) => (b.id === bank.id ? { ...b, [field]: next } : b)));
     try {
       const payload: any = {};
-      if (field === 'support_disbursement') payload.supportDisbursement = next;
+      if (field === 'support_va') payload.supportVa = next;
       if (field === 'is_active') payload.isActive = next;
       await api.put(`/v1/admin/bank-codes/${bank.id}`, payload);
     } catch (err) {
@@ -80,8 +80,8 @@ export default function DisbursementMethods() {
     return banks.filter((b) => {
       if (filter === 'active' && !b.is_active) return false;
       if (filter === 'inactive' && b.is_active) return false;
-      if (filter === 'enabled' && !b.support_disbursement) return false;
-      if (filter === 'disabled' && b.support_disbursement) return false;
+      if (filter === 'enabled' && !b.support_va) return false;
+      if (filter === 'disabled' && b.support_va) return false;
       if (search) {
         const q = search.toLowerCase();
         return (
@@ -95,11 +95,10 @@ export default function DisbursementMethods() {
   }, [banks, search, filter]);
 
   const stats = useMemo(() => {
-    const enabled = banks.filter((b) => b.support_disbursement && b.is_active).length;
     return {
       total: banks.length,
       active: banks.filter((b) => b.is_active).length,
-      enabled,
+      enabled: banks.filter((b) => b.support_va && b.is_active).length,
       inactive: banks.filter((b) => !b.is_active).length,
     };
   }, [banks]);
@@ -107,14 +106,14 @@ export default function DisbursementMethods() {
   return (
     <Layout>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Disbursement Methods</h1>
-        <p className="text-gray-500 mt-1 text-sm">Daftar bank yang melayani disbursement (transfer keluar).</p>
+        <h1 className="text-2xl font-bold text-gray-900">VA Banks</h1>
+        <p className="text-gray-500 mt-1 text-sm">Daftar bank yang mendukung pembuatan Virtual Account.</p>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <StatCard label="Total Banks" value={stats.total} color="text-gray-900" />
         <StatCard label="Active" value={stats.active} color="text-emerald-600" />
-        <StatCard label="Disbursement Enabled" value={stats.enabled} color="text-indigo-600" />
+        <StatCard label="VA Enabled" value={stats.enabled} color="text-blue-600" />
         <StatCard label="Inactive" value={stats.inactive} color="text-gray-500" />
       </div>
 
@@ -134,8 +133,8 @@ export default function DisbursementMethods() {
             <option value="all">All banks</option>
             <option value="active">Active only</option>
             <option value="inactive">Inactive only</option>
-            <option value="enabled">Disbursement enabled</option>
-            <option value="disabled">Disbursement disabled</option>
+            <option value="enabled">VA enabled</option>
+            <option value="disabled">VA disabled</option>
           </select>
         </div>
       </div>
@@ -157,7 +156,7 @@ export default function DisbursementMethods() {
                 <th className="px-4 py-3">Code</th>
                 <th className="px-4 py-3">Name</th>
                 <th className="px-4 py-3">SWIFT</th>
-                <th className="px-4 py-3 text-center">Disbursement</th>
+                <th className="px-4 py-3 text-center">VA</th>
                 <th className="px-4 py-3 text-center">Status</th>
                 <th className="px-4 py-3 text-right">Edit</th>
               </tr>
@@ -172,7 +171,7 @@ export default function DisbursementMethods() {
                   </td>
                   <td className="px-4 py-3 font-mono text-xs text-gray-500">{b.swiftCode || '—'}</td>
                   <td className="px-4 py-3 text-center">
-                    <Toggle checked={b.support_disbursement} onClick={() => toggleField(b, 'support_disbursement')} />
+                    <Toggle checked={b.support_va} onClick={() => toggleField(b, 'support_va')} />
                   </td>
                   <td className="px-4 py-3 text-center">
                     <StatusBadge active={b.is_active} onClick={() => toggleField(b, 'is_active')} />
@@ -235,9 +234,9 @@ export default function DisbursementMethods() {
               </div>
               <div className="grid grid-cols-2 gap-3 pt-2">
                 <CheckboxRow
-                  label="Disbursement"
-                  checked={editing.support_disbursement}
-                  onChange={(v) => setEditing({ ...editing, support_disbursement: v })}
+                  label="VA"
+                  checked={editing.support_va}
+                  onChange={(v) => setEditing({ ...editing, support_va: v })}
                 />
                 <CheckboxRow
                   label="Active"
@@ -276,7 +275,7 @@ function Toggle({ checked, onClick }: { checked: boolean; onClick: () => void })
       type="button"
       onClick={onClick}
       className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-        checked ? 'bg-emerald-500' : 'bg-gray-200'
+        checked ? 'bg-blue-500' : 'bg-gray-200'
       }`}
     >
       <span
@@ -307,7 +306,7 @@ function StatusBadge({ active, onClick }: { active: boolean; onClick: () => void
 function CheckboxRow({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
   return (
     <label className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border cursor-pointer transition-colors ${
-      checked ? 'border-emerald-200 bg-emerald-50' : 'border-gray-200 bg-white'
+      checked ? 'border-blue-200 bg-blue-50' : 'border-gray-200 bg-white'
     }`}>
       <input
         type="checkbox"
@@ -315,7 +314,7 @@ function CheckboxRow({ label, checked, onChange }: { label: string; checked: boo
         onChange={(e) => onChange(e.target.checked)}
         className="rounded"
       />
-      <span className={`text-sm font-medium ${checked ? 'text-emerald-700' : 'text-gray-700'}`}>{label}</span>
+      <span className={`text-sm font-medium ${checked ? 'text-blue-700' : 'text-gray-700'}`}>{label}</span>
     </label>
   );
 }

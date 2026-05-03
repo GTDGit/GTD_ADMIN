@@ -35,6 +35,7 @@ export default function PaymentMethods() {
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState('');
   const [providerFilter, setProviderFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive' | 'maintenance'>('all');
 
   useEffect(() => {
     fetchMethods();
@@ -107,6 +108,9 @@ export default function PaymentMethods() {
   const filtered = useMemo(() => {
     return methods.filter((m) => {
       if (providerFilter !== 'all' && m.provider !== providerFilter) return false;
+      if (statusFilter === 'active' && (!m.isActive || m.isMaintenance)) return false;
+      if (statusFilter === 'inactive' && m.isActive) return false;
+      if (statusFilter === 'maintenance' && !m.isMaintenance) return false;
       if (search) {
         const q = search.toLowerCase();
         return (
@@ -117,7 +121,7 @@ export default function PaymentMethods() {
       }
       return true;
     });
-  }, [methods, search, providerFilter]);
+  }, [methods, search, providerFilter, statusFilter]);
 
   const grouped = filtered.reduce<Record<string, PaymentMethod[]>>((acc, m) => {
     (acc[m.type] = acc[m.type] || []).push(m);
@@ -168,12 +172,22 @@ export default function PaymentMethods() {
           <select
             value={providerFilter}
             onChange={(e) => setProviderFilter(e.target.value)}
-            className="input-field md:col-span-2"
+            className="input-field"
           >
             <option value="all">All providers</option>
             {usedProviders.map((p) => (
               <option key={p} value={p}>{p}</option>
             ))}
+          </select>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as any)}
+            className="input-field"
+          >
+            <option value="all">All statuses</option>
+            <option value="active">Active only</option>
+            <option value="maintenance">Maintenance</option>
+            <option value="inactive">Inactive</option>
           </select>
         </div>
       </div>
