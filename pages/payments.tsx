@@ -8,15 +8,14 @@ interface Payment {
   paymentId: string;
   referenceId: string;
   clientId: number;
-  type: string;
-  code: string;
+  paymentType: string;
+  paymentCode: string;
   status: string;
   provider: string;
   providerRef?: string;
   amount: number;
   fee: number;
   totalAmount: number;
-  paidAmount?: number;
   isSandbox: boolean;
   expiredAt?: string;
   paidAt?: string;
@@ -30,14 +29,11 @@ interface Payment {
 
 interface Stats {
   total: number;
-  paid: number;
-  pending: number;
-  expired: number;
-  cancelled: number;
-  failed: number;
-  refunded: number;
-  volume: number;
-  paidVolume: number;
+  totalPaid: number;
+  totalPending: number;
+  totalExpired: number;
+  totalFailed: number;
+  totalVolume: number;
 }
 
 const STATUS_STYLES: Record<string, string> = {
@@ -76,7 +72,7 @@ export default function Payments() {
       if (search) params.search = search;
       const { data } = await api.get('/v1/admin/payments', { params });
       setPayments(data.data?.payments || []);
-      setTotal(data.data?.total || 0);
+      setTotal(data.data?.pagination?.totalItems || 0);
     } catch (err) {
       console.error('Failed to fetch payments:', err);
     } finally {
@@ -122,12 +118,12 @@ export default function Payments() {
     try {
       const [logsRes, cbRes, refundsRes] = await Promise.all([
         api.get(`/v1/admin/payments/${p.id}/logs`),
-        api.get(`/v1/admin/payments/${p.id}/callbacks`),
+        api.get(`/v1/admin/payments/${p.id}/callback-logs`),
         api.get(`/v1/admin/payments/${p.id}/refunds`),
       ]);
-      setDetailLogs(logsRes.data.data?.logs || []);
-      setDetailCallbacks(cbRes.data.data?.callbacks || []);
-      setDetailRefunds(refundsRes.data.data?.refunds || []);
+      setDetailLogs(Array.isArray(logsRes.data.data) ? logsRes.data.data : (logsRes.data.data?.logs || []));
+      setDetailCallbacks(Array.isArray(cbRes.data.data) ? cbRes.data.data : (cbRes.data.data?.callbacks || []));
+      setDetailRefunds(Array.isArray(refundsRes.data.data) ? refundsRes.data.data : (refundsRes.data.data?.refunds || []));
     } catch (err) {
       console.error('Failed to load detail:', err);
     }
@@ -148,10 +144,10 @@ export default function Payments() {
     if (!stats) return [];
     return [
       { label: 'Total', value: stats.total, color: 'text-gray-900' },
-      { label: 'Paid', value: stats.paid, color: 'text-emerald-600' },
-      { label: 'Pending', value: stats.pending, color: 'text-amber-600' },
-      { label: 'Failed', value: stats.failed, color: 'text-red-600' },
-      { label: 'Paid Volume', value: `Rp ${stats.paidVolume.toLocaleString('id-ID')}`, color: 'text-indigo-600' },
+      { label: 'Paid', value: stats.totalPaid, color: 'text-emerald-600' },
+      { label: 'Pending', value: stats.totalPending, color: 'text-amber-600' },
+      { label: 'Failed', value: stats.totalFailed, color: 'text-red-600' },
+      { label: 'Paid Volume', value: `Rp ${(stats.totalVolume || 0).toLocaleString('id-ID')}`, color: 'text-indigo-600' },
     ];
   }, [stats]);
 
@@ -249,7 +245,7 @@ export default function Payments() {
                     {p.isSandbox && <span className="ml-1 text-[10px] px-1 bg-amber-100 text-amber-700 rounded">SB</span>}
                   </td>
                   <td className="px-4 py-3 font-mono text-xs text-gray-500">{p.referenceId}</td>
-                  <td className="px-4 py-3 text-gray-700">{p.type} · {p.code}</td>
+                  <td className="px-4 py-3 text-gray-700">{p.paymentType} · {p.paymentCode}</td>
                   <td className="px-4 py-3 text-xs text-gray-600">{p.provider}</td>
                   <td className="px-4 py-3 text-right font-medium text-gray-900">
                     Rp {p.totalAmount.toLocaleString('id-ID')}
@@ -285,7 +281,7 @@ export default function Payments() {
             <div className="p-5 border-b border-gray-100 flex justify-between items-center">
               <div>
                 <h2 className="text-lg font-semibold text-gray-900">{selected.paymentId}</h2>
-                <p className="text-xs text-gray-500 mt-0.5">{selected.type} · {selected.code} · {selected.provider}</p>
+                <p className="text-xs text-gray-500 mt-0.5">{selected.paymentType} · {selected.paymentCode} · {selected.provider}</p>
               </div>
               <button onClick={() => setSelected(null)} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
                 <X className="w-5 h-5 text-gray-400" />
@@ -301,7 +297,7 @@ export default function Payments() {
                 <Info label="Amount" value={`Rp ${selected.amount.toLocaleString('id-ID')}`} />
                 <Info label="Fee" value={`Rp ${selected.fee.toLocaleString('id-ID')}`} />
                 <Info label="Total" value={`Rp ${selected.totalAmount.toLocaleString('id-ID')}`} />
-                <Info label="Paid Amount" value={selected.paidAmount ? `Rp ${selected.paidAmount.toLocaleString('id-ID')}` : '—'} />
+                <Info label="Provider" value={selected.provider} />
                 <Info label="Created" value={selected.createdAt} />
                 <Info label="Expired" value={selected.expiredAt || '—'} />
                 <Info label="Paid At" value={selected.paidAt || '—'} />
