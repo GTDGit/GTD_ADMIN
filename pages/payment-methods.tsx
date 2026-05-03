@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Layout from '@/components/Layout';
 import api from '@/lib/api';
-import { Wallet, Edit, X, Check, AlertCircle } from 'lucide-react';
+import { Wallet, Edit, X, Check, AlertCircle, Search } from 'lucide-react';
 
 interface PaymentMethod {
   id: number;
@@ -33,6 +33,8 @@ export default function PaymentMethods() {
   const [instructionText, setInstructionText] = useState('');
   const [instructionError, setInstructionError] = useState('');
   const [saving, setSaving] = useState(false);
+  const [search, setSearch] = useState('');
+  const [providerFilter, setProviderFilter] = useState<string>('all');
 
   useEffect(() => {
     fetchMethods();
@@ -95,10 +97,37 @@ export default function PaymentMethods() {
     }
   };
 
-  const grouped = methods.reduce<Record<string, PaymentMethod[]>>((acc, m) => {
+  const stats = useMemo(() => ({
+    total: methods.length,
+    active: methods.filter((m) => m.isActive && !m.isMaintenance).length,
+    maintenance: methods.filter((m) => m.isMaintenance).length,
+    inactive: methods.filter((m) => !m.isActive).length,
+  }), [methods]);
+
+  const filtered = useMemo(() => {
+    return methods.filter((m) => {
+      if (providerFilter !== 'all' && m.provider !== providerFilter) return false;
+      if (search) {
+        const q = search.toLowerCase();
+        return (
+          m.code.toLowerCase().includes(q) ||
+          m.name.toLowerCase().includes(q) ||
+          m.type.toLowerCase().includes(q)
+        );
+      }
+      return true;
+    });
+  }, [methods, search, providerFilter]);
+
+  const grouped = filtered.reduce<Record<string, PaymentMethod[]>>((acc, m) => {
     (acc[m.type] = acc[m.type] || []).push(m);
     return acc;
   }, {});
+
+  const usedProviders = useMemo(() => {
+    const set = new Set(methods.map((m) => m.provider));
+    return Array.from(set).sort();
+  }, [methods]);
 
   if (loading) {
     return (
@@ -112,15 +141,47 @@ export default function PaymentMethods() {
 
   return (
     <Layout>
-      <div className="mb-8">
+      <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Payment Methods</h1>
         <p className="text-gray-500 mt-1 text-sm">Configure provider, fees, and availability per method.</p>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <StatCard label="Total" value={stats.total} color="text-gray-900" />
+        <StatCard label="Active" value={stats.active} color="text-emerald-600" />
+        <StatCard label="Maintenance" value={stats.maintenance} color="text-amber-600" />
+        <StatCard label="Inactive" value={stats.inactive} color="text-gray-500" />
+      </div>
+
+      <div className="card p-4 mb-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <div className="relative md:col-span-2">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search code / name / type"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="input-field pl-9"
+            />
+          </div>
+          <select
+            value={providerFilter}
+            onChange={(e) => setProviderFilter(e.target.value)}
+            className="input-field md:col-span-2"
+          >
+            <option value="all">All providers</option>
+            {usedProviders.map((p) => (
+              <option key={p} value={p}>{p}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {Object.keys(grouped).length === 0 ? (
         <div className="card p-12 text-center">
           <Wallet className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-          <p className="text-gray-500">No payment methods configured.</p>
+          <p className="text-gray-500">No payment methods match your filter.</p>
         </div>
       ) : (
         Object.entries(grouped).map(([type, items]) => (
@@ -357,5 +418,14 @@ export default function PaymentMethods() {
         </div>
       )}
     </Layout>
+  );
+}
+
+function StatCard({ label, value, color }: { label: string; value: number; color: string }) {
+  return (
+    <div className="card p-4">
+      <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">{label}</p>
+      <p className={`text-xl font-bold mt-1 ${color}`}>{value}</p>
+    </div>
   );
 }

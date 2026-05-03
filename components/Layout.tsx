@@ -13,6 +13,7 @@ import {
   CreditCard,
   Wallet,
   Send,
+  Building2,
 } from 'lucide-react';
 
 interface LayoutProps {
@@ -57,6 +58,7 @@ const NAV_GROUPS: NavGroup[] = [
     title: 'Disbursement',
     items: [
       { href: '/transfers', icon: Send, label: 'Transfers' },
+      { href: '/disbursement-methods', icon: Building2, label: 'Methods' },
     ],
   },
 ];
