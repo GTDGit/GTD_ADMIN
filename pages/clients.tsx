@@ -15,7 +15,23 @@ export default function Clients() {
     callbackUrl: '',
     paymentCallbackUrl: '',
     ipWhitelist: '',
+    scopes: ['ppob', 'payment', 'disbursement'] as string[],
   });
+
+  const ALL_SCOPES = [
+    { value: 'ppob', label: 'PPOB' },
+    { value: 'payment', label: 'Payment' },
+    { value: 'disbursement', label: 'Disbursement' },
+  ];
+
+  const toggleScope = (scope: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      scopes: prev.scopes.includes(scope)
+        ? prev.scopes.filter((s) => s !== scope)
+        : [...prev.scopes, scope],
+    }));
+  };
 
   useEffect(() => {
     fetchClients();
@@ -48,7 +64,7 @@ export default function Clients() {
 
       setShowModal(false);
       setEditingClient(null);
-      setFormData({ clientId: '', name: '', callbackUrl: '', paymentCallbackUrl: '', ipWhitelist: '' });
+      setFormData({ clientId: '', name: '', callbackUrl: '', paymentCallbackUrl: '', ipWhitelist: '', scopes: ['ppob', 'payment', 'disbursement'] });
       fetchClients();
     } catch (error) {
       console.error('Failed to save client:', error);
@@ -63,6 +79,7 @@ export default function Clients() {
       callbackUrl: client.callbackUrl,
       paymentCallbackUrl: client.paymentCallbackUrl || '',
       ipWhitelist: client.ipWhitelist?.join(', ') || '',
+      scopes: client.scopes && client.scopes.length > 0 ? client.scopes : ['ppob', 'payment', 'disbursement'],
     });
     setShowModal(true);
   };
@@ -103,7 +120,7 @@ export default function Clients() {
         <button
           onClick={() => {
             setEditingClient(null);
-            setFormData({ clientId: '', name: '', callbackUrl: '', paymentCallbackUrl: '', ipWhitelist: '' });
+            setFormData({ clientId: '', name: '', callbackUrl: '', paymentCallbackUrl: '', ipWhitelist: '', scopes: ['ppob', 'payment', 'disbursement'] });
             setShowModal(true);
           }}
           className="btn-primary flex items-center gap-2"
@@ -231,6 +248,20 @@ export default function Clients() {
                   </div>
                 )}
 
+                {/* Scopes badges */}
+                {client.scopes && client.scopes.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 pt-3 border-t border-gray-100">
+                    {client.scopes.map((scope: string) => (
+                      <span
+                        key={scope}
+                        className="px-2 py-0.5 text-xs font-medium bg-indigo-50 text-indigo-700 rounded-md"
+                      >
+                        {scope}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
                 {/* Callback & IP info */}
                 <div className="flex flex-wrap gap-4 pt-3 border-t border-gray-100">
                   <div className="flex items-center gap-2 text-sm text-gray-500">
@@ -326,6 +357,29 @@ export default function Clients() {
                   className="input-field"
                   placeholder="Comma separated, e.g. 103.x.x.x, 103.y.y.y"
                 />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Scopes</label>
+                <div className="flex flex-wrap gap-2">
+                  {ALL_SCOPES.map((s) => {
+                    const active = formData.scopes.includes(s.value);
+                    return (
+                      <button
+                        key={s.value}
+                        type="button"
+                        onClick={() => toggleScope(s.value)}
+                        className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors ${
+                          active
+                            ? 'bg-indigo-50 border-indigo-300 text-indigo-700'
+                            : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300'
+                        }`}
+                      >
+                        {s.label}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="text-xs text-gray-400 mt-1">Pilih layanan yang boleh diakses API key client ini.</p>
               </div>
               <div className="flex gap-3 pt-2">
                 <button type="submit" className="flex-1 btn-primary py-2.5">
