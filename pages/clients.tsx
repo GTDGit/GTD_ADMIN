@@ -104,7 +104,7 @@ export default function Clients() {
     return (
       <Layout>
         <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-10 w-10 border-2 border-indigo-600 border-t-transparent"></div>
+          <div className="animate-spin rounded-full h-10 w-10 border-2 border-blue-600 border-t-transparent"></div>
         </div>
       </Layout>
     );
@@ -141,8 +141,8 @@ export default function Clients() {
             <div key={client.id} className="card p-6">
               <div className="flex justify-between items-start mb-5">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center">
-                    <Shield className="w-5 h-5 text-indigo-600" />
+                  <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
+                    <Shield className="w-5 h-5 text-blue-600" />
                   </div>
                   <div>
                     <h3 className="text-base font-semibold text-gray-900">{client.name}</h3>
@@ -151,7 +151,7 @@ export default function Clients() {
                 </div>
                 <button
                   onClick={() => handleEdit(client)}
-                  className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                  className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                 >
                   <Edit className="w-4 h-4" />
                 </button>
@@ -254,7 +254,7 @@ export default function Clients() {
                     {client.scopes.map((scope: string) => (
                       <span
                         key={scope}
-                        className="px-2 py-0.5 text-xs font-medium bg-indigo-50 text-indigo-700 rounded-md"
+                        className="px-2 py-0.5 text-xs font-medium bg-blue-50 text-blue-700 rounded-md"
                       >
                         {scope}
                       </span>
@@ -370,7 +370,7 @@ export default function Clients() {
                         onClick={() => toggleScope(s.value)}
                         className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors ${
                           active
-                            ? 'bg-indigo-50 border-indigo-300 text-indigo-700'
+                            ? 'bg-blue-50 border-blue-300 text-blue-700'
                             : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300'
                         }`}
                       >

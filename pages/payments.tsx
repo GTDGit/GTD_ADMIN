@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Layout from '@/components/Layout';
 import api from '@/lib/api';
 import { CreditCard, Search, RefreshCw, X, ChevronLeft, ChevronRight, Repeat2 } from 'lucide-react';
+import { getStatusStyle } from '@/lib/status';
 
 interface Payment {
   id: number;
@@ -36,15 +37,7 @@ interface Stats {
   totalVolume: number;
 }
 
-const STATUS_STYLES: Record<string, string> = {
-  Paid: 'bg-emerald-50 text-emerald-700',
-  Pending: 'bg-amber-50 text-amber-700',
-  Expired: 'bg-gray-100 text-gray-600',
-  Cancelled: 'bg-gray-100 text-gray-600',
-  Failed: 'bg-red-50 text-red-700',
-  Refunded: 'bg-purple-50 text-purple-700',
-  Partial_Refund: 'bg-purple-50 text-purple-700',
-};
+
 
 export default function Payments() {
   const [payments, setPayments] = useState<Payment[]>([]);
@@ -147,7 +140,7 @@ export default function Payments() {
       { label: 'Paid', value: stats.totalPaid, color: 'text-emerald-600' },
       { label: 'Pending', value: stats.totalPending, color: 'text-amber-600' },
       { label: 'Failed', value: stats.totalFailed, color: 'text-red-600' },
-      { label: 'Paid Volume', value: `Rp ${(stats.totalVolume || 0).toLocaleString('id-ID')}`, color: 'text-indigo-600' },
+      { label: 'Paid Volume', value: `Rp ${(stats.totalVolume || 0).toLocaleString('id-ID')}`, color: 'text-blue-600' },
     ];
   }, [stats]);
 
@@ -216,7 +209,7 @@ export default function Payments() {
 
       {loading ? (
         <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-10 w-10 border-2 border-indigo-600 border-t-transparent"></div>
+          <div className="animate-spin rounded-full h-10 w-10 border-2 border-blue-600 border-t-transparent"></div>
         </div>
       ) : payments.length === 0 ? (
         <div className="card p-12 text-center">
@@ -251,7 +244,7 @@ export default function Payments() {
                     Rp {p.totalAmount.toLocaleString('id-ID')}
                   </td>
                   <td className="px-4 py-3">
-                    <span className={`px-2 py-1 rounded text-xs ${STATUS_STYLES[p.status] || 'bg-gray-100 text-gray-600'}`}>
+                    <span className={`badge ${getStatusStyle(p.status)}`}>
                       {p.status}
                     </span>
                   </td>
@@ -362,7 +355,7 @@ export default function Payments() {
                 <div>
                   <h3 className="text-sm font-semibold text-gray-700 mb-2 flex justify-between">
                     <span>Client Callback Log ({detailCallbacks.length})</span>
-                    <button onClick={() => handleRetryCallback(selected.id)} className="text-xs text-indigo-600 hover:text-indigo-700 flex items-center gap-1">
+                    <button onClick={() => handleRetryCallback(selected.id)} className="text-xs text-blue-600 hover:text-blue-700 flex items-center gap-1">
                       <Repeat2 className="w-3 h-3" /> Force retry
                     </button>
                   </h3>

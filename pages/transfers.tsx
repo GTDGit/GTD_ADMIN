@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Layout from '@/components/Layout';
 import api from '@/lib/api';
 import { Send, Search, RefreshCw, X, ChevronLeft, ChevronRight, Building2 } from 'lucide-react';
+import { getStatusStyle } from '@/lib/status';
 
 interface Transfer {
   id: number;
@@ -43,12 +44,7 @@ interface Stats {
   totalVolume: number;
 }
 
-const STATUS_STYLES: Record<string, string> = {
-  Success: 'bg-emerald-50 text-emerald-700',
-  Processing: 'bg-blue-50 text-blue-700',
-  Pending: 'bg-amber-50 text-amber-700',
-  Failed: 'bg-red-50 text-red-700',
-};
+
 
 export default function Transfers() {
   const [transfers, setTransfers] = useState<Transfer[]>([]);
@@ -120,7 +116,7 @@ export default function Transfers() {
       { label: 'Success', value: stats.totalSuccess, color: 'text-emerald-600' },
       { label: 'Processing', value: stats.totalProcessing, color: 'text-blue-600' },
       { label: 'Failed', value: stats.totalFailed, color: 'text-red-600' },
-      { label: 'Success Volume', value: `Rp ${(stats.totalVolume || 0).toLocaleString('id-ID')}`, color: 'text-indigo-600' },
+      { label: 'Success Volume', value: `Rp ${(stats.totalVolume || 0).toLocaleString('id-ID')}`, color: 'text-blue-600' },
     ];
   }, [stats]);
 
@@ -186,7 +182,7 @@ export default function Transfers() {
 
       {loading ? (
         <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-10 w-10 border-2 border-indigo-600 border-t-transparent"></div>
+          <div className="animate-spin rounded-full h-10 w-10 border-2 border-blue-600 border-t-transparent"></div>
         </div>
       ) : transfers.length === 0 ? (
         <div className="card p-12 text-center">
@@ -224,7 +220,7 @@ export default function Transfers() {
                     Rp {t.totalAmount.toLocaleString('id-ID')}
                   </td>
                   <td className="px-4 py-3">
-                    <span className={`px-2 py-1 rounded text-xs ${STATUS_STYLES[t.status] || 'bg-gray-100 text-gray-600'}`}>
+                    <span className={`badge ${getStatusStyle(t.status)}`}>
                       {t.status}
                     </span>
                   </td>
@@ -263,14 +259,14 @@ export default function Transfers() {
 
             <div className="p-5 overflow-y-auto space-y-5">
               <div className="rounded-xl border border-gray-100 p-4 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-indigo-50 flex items-center justify-center">
-                  <Building2 className="w-5 h-5 text-indigo-600" />
+                <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
+                  <Building2 className="w-5 h-5 text-blue-600" />
                 </div>
                 <div className="flex-1">
                   <p className="text-sm font-semibold text-gray-900">{selected.accountName || '—'}</p>
                   <p className="text-xs text-gray-500 font-mono">{selected.bankName || selected.bankCode} · {selected.accountNumber}</p>
                 </div>
-                <span className={`px-2.5 py-1 rounded text-xs font-medium ${STATUS_STYLES[selected.status] || 'bg-gray-100 text-gray-600'}`}>
+                <span className={`badge ${getStatusStyle(selected.status)}`}>
                   {selected.status}
                 </span>
               </div>

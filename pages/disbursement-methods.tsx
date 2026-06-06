@@ -114,7 +114,7 @@ export default function DisbursementMethods() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <StatCard label="Total Banks" value={stats.total} color="text-gray-900" />
         <StatCard label="Active" value={stats.active} color="text-emerald-600" />
-        <StatCard label="Disbursement Enabled" value={stats.enabled} color="text-indigo-600" />
+        <StatCard label="Disbursement Enabled" value={stats.enabled} color="text-blue-600" />
         <StatCard label="Inactive" value={stats.inactive} color="text-gray-500" />
       </div>
 
@@ -142,7 +142,7 @@ export default function DisbursementMethods() {
 
       {loading ? (
         <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-10 w-10 border-2 border-indigo-600 border-t-transparent"></div>
+          <div className="animate-spin rounded-full h-10 w-10 border-2 border-blue-600 border-t-transparent"></div>
         </div>
       ) : filtered.length === 0 ? (
         <div className="card p-12 text-center">
@@ -180,7 +180,7 @@ export default function DisbursementMethods() {
                   <td className="px-4 py-3 text-right">
                     <button
                       onClick={() => setEditing({ ...b })}
-                      className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                      className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                     >
                       <Edit className="w-4 h-4" />
                     </button>

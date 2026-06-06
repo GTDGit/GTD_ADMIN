@@ -42,7 +42,7 @@ export default function Dashboard() {
     return (
       <Layout>
         <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-10 w-10 border-2 border-indigo-600 border-t-transparent"></div>
+          <div className="animate-spin rounded-full h-10 w-10 border-2 border-blue-600 border-t-transparent"></div>
         </div>
       </Layout>
     );
@@ -87,8 +87,8 @@ export default function Dashboard() {
 
         <div className="stat-card">
           <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center">
-              <Clock className="w-5 h-5 text-indigo-600" />
+            <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
+              <Clock className="w-5 h-5 text-blue-600" />
             </div>
             <p className="text-sm text-gray-500">Uptime</p>
           </div>

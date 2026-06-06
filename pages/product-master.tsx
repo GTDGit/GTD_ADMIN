@@ -163,7 +163,7 @@ export default function ProductMasterPage() {
             onClick={() => setTab(t.key)}
             className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 flex items-center gap-2 ${
               tab === t.key
-                ? 'bg-indigo-600 text-white shadow-sm'
+                ? 'bg-blue-600 text-white shadow-sm'
                 : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
             }`}
           >
@@ -210,7 +210,7 @@ export default function ProductMasterPage() {
                 <div className="flex gap-1">
                   <button
                     onClick={() => openEdit(item)}
-                    className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                    className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                   >
                     <Edit className="w-4 h-4" />
                   </button>

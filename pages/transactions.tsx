@@ -20,6 +20,7 @@ import {
   WifiOff,
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { getStatusStyle } from '@/lib/status';
 
 interface Transaction {
   id: number;
@@ -323,20 +324,6 @@ export default function Transactions() {
     return new Intl.NumberFormat('id-ID').format(num);
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'success':
-        return 'bg-green-100 text-green-800';
-      case 'processing':
-        return 'bg-blue-100 text-blue-800';
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'failed':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
 
   const getStatusIcon = (status: string) => {
     switch (status.toLowerCase()) {
@@ -438,8 +425,8 @@ export default function Transactions() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-5 mb-6">
           <div className="stat-card">
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center">
-                <TrendingUp className="w-5 h-5 text-indigo-600" />
+              <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
+                <TrendingUp className="w-5 h-5 text-blue-600" />
               </div>
               <p className="text-sm text-gray-500">Total Transactions</p>
             </div>
@@ -475,7 +462,7 @@ export default function Transactions() {
               <p className="text-sm text-gray-500">By Type</p>
             </div>
             <div className="flex gap-3 text-sm">
-              <span className="text-indigo-600 font-medium">{formatNumber(stats.byType.prepaid)} prepaid</span>
+              <span className="text-blue-600 font-medium">{formatNumber(stats.byType.prepaid)} prepaid</span>
               <span className="text-purple-600 font-medium">{formatNumber(stats.byType.inquiry)} inquiry</span>
             </div>
             <div className="mt-1 text-xs text-gray-400">{formatNumber(stats.byType.payment)} payment</div>
@@ -614,7 +601,7 @@ export default function Transactions() {
       <div className="card overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center h-64">
-            <div className="animate-spin rounded-full h-10 w-10 border-2 border-indigo-600 border-t-transparent"></div>
+            <div className="animate-spin rounded-full h-10 w-10 border-2 border-blue-600 border-t-transparent"></div>
           </div>
         ) : transactions.length === 0 ? (
           <div className="text-center py-12">
@@ -688,7 +675,7 @@ export default function Transactions() {
                               ? 'bg-blue-100 text-blue-800'
                               : trx.type === 'inquiry'
                               ? 'bg-purple-100 text-purple-800'
-                              : 'bg-indigo-100 text-indigo-800'
+                              : 'bg-blue-100 text-blue-800'
                           }`}
                         >
                           {trx.type}
@@ -699,9 +686,7 @@ export default function Transactions() {
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap">
                         <span
-                          className={`inline-flex items-center gap-1 px-2 py-1 text-xs rounded-full ${getStatusColor(
-                            trx.status
-                          )}`}
+                          className={`badge ${getStatusStyle(trx.status)}`}
                         >
                           {getStatusIcon(trx.status)}
                           {trx.status}
@@ -802,9 +787,7 @@ export default function Transactions() {
                 <div className="bg-gray-50 p-3 rounded">
                   <p className="text-xs text-gray-500">Status</p>
                   <span
-                    className={`inline-flex items-center gap-1 px-2 py-1 text-sm rounded-full ${getStatusColor(
-                      selectedTransaction.status
-                    )}`}
+                    className={`badge ${getStatusStyle(selectedTransaction.status)}`}
                   >
                     {getStatusIcon(selectedTransaction.status)}
                     {selectedTransaction.status}

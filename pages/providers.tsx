@@ -268,7 +268,7 @@ export default function Providers() {
 
   const getProviderColor = (code: string) => {
     const colors: Record<string, { bg: string; border: string; text: string; icon: string }> = {
-      kiosbank: { bg: 'bg-indigo-50', border: 'border-indigo-200', text: 'text-indigo-700', icon: 'bg-indigo-500' },
+      kiosbank: { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700', icon: 'bg-blue-500' },
       alterra: { bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-700', icon: 'bg-emerald-500' },
       digiflazz: { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700', icon: 'bg-amber-500' },
     };

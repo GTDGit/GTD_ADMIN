@@ -137,7 +137,7 @@ export default function PaymentMethods() {
     return (
       <Layout>
         <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-10 w-10 border-2 border-indigo-600 border-t-transparent"></div>
+          <div className="animate-spin rounded-full h-10 w-10 border-2 border-blue-600 border-t-transparent"></div>
         </div>
       </Layout>
     );
@@ -220,7 +220,7 @@ export default function PaymentMethods() {
                       <td className="px-4 py-3 font-mono text-gray-700">{m.code}</td>
                       <td className="px-4 py-3 text-gray-900">{m.name}</td>
                       <td className="px-4 py-3">
-                        <span className="px-2 py-1 bg-indigo-50 text-indigo-700 rounded text-xs font-medium">
+                        <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs font-medium">
                           {m.provider}
                         </span>
                       </td>
@@ -246,7 +246,7 @@ export default function PaymentMethods() {
                       <td className="px-4 py-3 text-right">
                         <button
                           onClick={() => openEdit(m)}
-                          className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                          className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                         >
                           <Edit className="w-4 h-4" />
                         </button>
