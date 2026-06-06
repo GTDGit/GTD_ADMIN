@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import Head from 'next/head';
 import Layout from '@/components/Layout';
 import api from '@/lib/api';
 import { Plus, Edit, Key, Copy, Check, X, Users, Globe, Shield, CreditCard as CreditCardIcon } from 'lucide-react';
@@ -111,11 +112,14 @@ export default function Clients() {
   }
 
   return (
-    <Layout>
-      <div className="mb-8 flex justify-between items-center">
+    <>
+      <Head><title>Clients — GTD Admin</title></Head>
+      <Layout>
+      <div className="page-content">
+      <div className="page-header">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Clients</h1>
-          <p className="text-gray-500 mt-1 text-sm">Manage API clients and keys</p>
+          <h1 className="page-title">Clients</h1>
+          <p className="page-desc">Manage API clients and keys</p>
         </div>
         <button
           onClick={() => {
@@ -397,6 +401,8 @@ export default function Clients() {
           </div>
         </div>
       )}
+      </div>
     </Layout>
+    </>
   );
 }

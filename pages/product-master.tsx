@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import Head from 'next/head';
 import Layout from '@/components/Layout';
 import api from '@/lib/api';
 import { MasterItem, normalizeMasterItems } from '@/lib/product-master';
@@ -147,9 +148,12 @@ export default function ProductMasterPage() {
   const list = tab === 'categories' ? categories : tab === 'brands' ? brands : variants;
 
   return (
-    <Layout>
+    <>
+      <Head><title>Catalog — GTD Admin</title></Head>
+      <Layout>
+      <div className="page-content">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Kategori, Brand & Variants</h1>
+        <h1 className="page-title">Katalog</h1>
         <p className="text-gray-500 mt-1 text-sm">
           Kelola data master untuk produk. Type (Prepaid/Postpaid) tetap enum.
         </p>
@@ -271,6 +275,8 @@ export default function ProductMasterPage() {
           </div>
         </div>
       )}
+      </div>
     </Layout>
+    </>
   );
 }

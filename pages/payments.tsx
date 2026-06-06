@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import Head from 'next/head';
 import Layout from '@/components/Layout';
 import api from '@/lib/api';
 import { CreditCard, Search, RefreshCw, X, ChevronLeft, ChevronRight, Repeat2 } from 'lucide-react';
@@ -145,10 +146,13 @@ export default function Payments() {
   }, [stats]);
 
   return (
-    <Layout>
+    <>
+      <Head><title>Payments — GTD Admin</title></Head>
+      <Layout>
+      <div className="page-content">
       <div className="mb-8 flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Payments</h1>
+          <h1 className="page-title">Payments</h1>
           <p className="text-gray-500 mt-1 text-sm">Monitor and manage all payment transactions.</p>
         </div>
         <button onClick={() => { fetchPayments(); fetchStats(); }} className="btn-secondary flex items-center gap-2">
@@ -376,7 +380,9 @@ export default function Payments() {
           </div>
         </div>
       )}
+      </div>
     </Layout>
+    </>
   );
 }
 

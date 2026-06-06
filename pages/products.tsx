@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import Head from 'next/head';
 import Layout from '@/components/Layout';
 import api from '@/lib/api';
 import { normalizeMasterItems } from '@/lib/product-master';
@@ -455,7 +456,10 @@ export default function Products() {
   };
 
   return (
-    <Layout>
+    <>
+      <Head><title>Products — GTD Admin</title></Head>
+      <Layout>
+      <div className="page-content">
       {/* Header */}
       <div className="mb-6">
         <div className="flex justify-between items-start">
@@ -1272,6 +1276,8 @@ export default function Products() {
           </div>
         </div>
       )}
+      </div>
     </Layout>
+    </>
   );
 }

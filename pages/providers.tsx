@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import Head from 'next/head';
 import Layout from '@/components/Layout';
 import api from '@/lib/api';
 import {
@@ -283,7 +284,10 @@ export default function Providers() {
   };
 
   return (
-    <Layout>
+    <>
+      <Head><title>Providers — GTD Admin</title></Head>
+      <Layout>
+      <div className="page-content">
       {/* Header */}
       <div className="mb-6">
         <div className="flex justify-between items-start">
@@ -791,6 +795,8 @@ export default function Providers() {
           </div>
         </div>
       )}
+      </div>
     </Layout>
+    </>
   );
 }

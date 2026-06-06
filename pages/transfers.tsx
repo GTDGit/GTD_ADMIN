@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import Head from 'next/head';
 import Layout from '@/components/Layout';
 import api from '@/lib/api';
 import { Send, Search, RefreshCw, X, ChevronLeft, ChevronRight, Building2 } from 'lucide-react';
@@ -121,10 +122,13 @@ export default function Transfers() {
   }, [stats]);
 
   return (
-    <Layout>
+    <>
+      <Head><title>Transfers — GTD Admin</title></Head>
+      <Layout>
+      <div className="page-content">
       <div className="mb-6 flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Transfers</h1>
+          <h1 className="page-title">Transfers</h1>
           <p className="text-gray-500 mt-1 text-sm">Disbursement monitoring across all providers.</p>
         </div>
         <button onClick={() => { fetchTransfers(); fetchStats(); }} className="btn-secondary flex items-center gap-2">
@@ -329,7 +333,9 @@ export default function Transfers() {
           </div>
         </div>
       )}
+      </div>
     </Layout>
+    </>
   );
 }
 

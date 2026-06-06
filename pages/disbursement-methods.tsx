@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import Head from 'next/head';
 import Layout from '@/components/Layout';
 import api from '@/lib/api';
 import { Building2, Edit, X, Check, Search } from 'lucide-react';
@@ -105,9 +106,12 @@ export default function DisbursementMethods() {
   }, [banks]);
 
   return (
-    <Layout>
+    <>
+      <Head><title>Disbursement Methods — GTD Admin</title></Head>
+      <Layout>
+      <div className="page-content">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Disbursement Methods</h1>
+        <h1 className="page-title">Disbursement Methods</h1>
         <p className="text-gray-500 mt-1 text-sm">Daftar bank yang melayani disbursement (transfer keluar).</p>
       </div>
 
@@ -257,7 +261,9 @@ export default function DisbursementMethods() {
           </div>
         </div>
       )}
+      </div>
     </Layout>
+    </>
   );
 }
 

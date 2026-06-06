@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import Head from 'next/head';
 import Layout from '@/components/Layout';
 import api from '@/lib/api';
 import { Wallet, Edit, X, Check, AlertCircle, Search } from 'lucide-react';
@@ -144,9 +145,12 @@ export default function PaymentMethods() {
   }
 
   return (
-    <Layout>
+    <>
+      <Head><title>Payment Methods — GTD Admin</title></Head>
+      <Layout>
+      <div className="page-content">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Payment Methods</h1>
+        <h1 className="page-title">Payment Methods</h1>
         <p className="text-gray-500 mt-1 text-sm">Configure provider, fees, and availability per method.</p>
       </div>
 
@@ -431,7 +435,9 @@ export default function PaymentMethods() {
           </div>
         </div>
       )}
+      </div>
     </Layout>
+    </>
   );
 }
 

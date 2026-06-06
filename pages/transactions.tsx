@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
+import Head from 'next/head';
 import Layout from '@/components/Layout';
 import api from '@/lib/api';
 import {
@@ -343,10 +344,13 @@ export default function Transactions() {
   const hasActiveFilters = Object.values(filters).some((v) => v !== '');
 
   return (
-    <Layout>
+    <>
+      <Head><title>Transactions — GTD Admin</title></Head>
+      <Layout>
+      <div className="page-content">
       <div className="mb-6 flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Transactions</h1>
+          <h1 className="page-title">Transactions</h1>
           <p className="text-gray-500 mt-1 text-sm">Monitor and manage PPOB transactions</p>
         </div>
         <div className="flex gap-2">
@@ -937,6 +941,8 @@ export default function Transactions() {
           </div>
         </div>
       )}
+      </div>
     </Layout>
+    </>
   );
 }
