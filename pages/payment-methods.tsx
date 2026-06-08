@@ -1,35 +1,28 @@
 import { useEffect, useMemo, useState } from 'react';
 import Head from 'next/head';
 import Layout from '@/components/Layout';
-import api from '@/lib/api';
-import { Wallet, Edit, X, Check, AlertCircle, Search } from 'lucide-react';
+import { useToast } from '@/components/Toast';
+import {
+  fetchPaymentMethods,
+  updatePaymentMethod,
+  updateMethodProviders,
+  type AdminPaymentMethod,
+  type ProviderBinding,
+  type BindingUpdate,
+} from '@/lib/api';
+import {
+  Wallet,
+  Edit,
+  X,
+  Check,
+  AlertCircle,
+  Search,
+  ArrowUp,
+  ArrowDown,
+} from 'lucide-react';
 
-interface PaymentMethod {
-  id: number;
-  type: string;
-  code: string;
-  name: string;
-  provider: string;
-  providerDisplayName?: string;
-  feeType: 'flat' | 'percent';
-  feeFlat: number;
-  feePercent: number;
-  feeMin: number;
-  feeMax: number;
-  minAmount: number;
-  maxAmount: number;
-  expiredDuration: number;
-  displayOrder: number;
-  isActive: boolean;
-  isMaintenance: boolean;
-  maintenanceMessage?: string;
-  paymentInstruction?: any;
-}
-
-// Canonical provider list — pulled dynamically from the DB via usedProviders.
-// The display name shown in the dropdown uses providerDisplayName from the DB row.
-const PROVIDER_VALUES = ['pakailink', 'dana_direct', 'midtrans', 'xendit', 'ovo_direct', 'bca_direct', 'bni_direct', 'mandiri_direct', 'bri_direct', 'bnc_direct'];
-
+// Canonical provider display names. The set of providers shown per method comes
+// from the method's `providers` bindings (the Method_Provider_Mapping).
 function providerLabel(provider: string): string {
   const map: Record<string, string> = {
     pakailink: 'Pakailink',
@@ -47,9 +40,11 @@ function providerLabel(provider: string): string {
 }
 
 export default function PaymentMethods() {
-  const [methods, setMethods] = useState<PaymentMethod[]>([]);
+  const toast = useToast();
+  const [methods, setMethods] = useState<AdminPaymentMethod[]>([]);
   const [loading, setLoading] = useState(true);
-  const [editing, setEditing] = useState<PaymentMethod | null>(null);
+  const [editing, setEditing] = useState<AdminPaymentMethod | null>(null);
+  const [bindings, setBindings] = useState<BindingUpdate[]>([]);
   const [instructionText, setInstructionText] = useState('');
   const [instructionError, setInstructionError] = useState('');
   const [saving, setSaving] = useState(false);
@@ -63,21 +58,50 @@ export default function PaymentMethods() {
 
   const fetchMethods = async () => {
     try {
-      const { data } = await api.get('/v1/admin/payment-methods');
-      setMethods(data.data?.methods || data.data || []);
+      const data = await fetchPaymentMethods();
+      setMethods(data);
     } catch (err) {
       console.error('Failed to fetch payment methods:', err);
+      toast.error('Failed to load payment methods');
     } finally {
       setLoading(false);
     }
   };
 
-  const openEdit = (m: PaymentMethod) => {
+  const openEdit = (m: AdminPaymentMethod) => {
     setEditing({ ...m });
+    // Seed editable bindings from the method's providers, ordered by priority.
+    const ordered = [...(m.providers || [])].sort((a, b) => a.priority - b.priority);
+    setBindings(
+      ordered.map((p) => ({
+        provider: p.provider,
+        priority: p.priority,
+        isActive: p.isActive,
+        isMaintenance: p.isMaintenance,
+        maintenanceMessage: p.maintenanceMessage,
+      }))
+    );
     setInstructionText(
       m.paymentInstruction ? JSON.stringify(m.paymentInstruction, null, 2) : ''
     );
     setInstructionError('');
+  };
+
+  const updateBinding = (provider: string, patch: Partial<BindingUpdate>) => {
+    setBindings((prev) =>
+      prev.map((b) => (b.provider === provider ? { ...b, ...patch } : b))
+    );
+  };
+
+  // Move a binding up/down in priority order; priorities are re-sequenced on save.
+  const moveBinding = (index: number, dir: -1 | 1) => {
+    setBindings((prev) => {
+      const next = [...prev];
+      const target = index + dir;
+      if (target < 0 || target >= next.length) return prev;
+      [next[index], next[target]] = [next[target], next[index]];
+      return next;
+    });
   };
 
   const handleSave = async () => {
@@ -93,8 +117,8 @@ export default function PaymentMethods() {
     }
     setSaving(true);
     try {
-      await api.put(`/v1/admin/payment-methods/${editing.id}`, {
-        provider: editing.provider,
+      // 1. Update canonical method fields.
+      await updatePaymentMethod(editing.id, {
         feeType: editing.feeType,
         feeFlat: editing.feeFlat,
         feePercent: editing.feePercent,
@@ -109,10 +133,26 @@ export default function PaymentMethods() {
         maintenanceMessage: editing.maintenanceMessage,
         paymentInstruction: instructionPayload,
       });
+
+      // 2. Update the ordered provider bindings. Priority follows list order
+      //    (lower = preferred), re-sequenced as 10, 20, 30...
+      if (bindings.length > 0) {
+        const payload: BindingUpdate[] = bindings.map((b, i) => ({
+          provider: b.provider,
+          priority: (i + 1) * 10,
+          isActive: b.isActive,
+          isMaintenance: b.isMaintenance,
+          maintenanceMessage: b.isMaintenance ? b.maintenanceMessage : undefined,
+        }));
+        await updateMethodProviders(editing.type, editing.code, payload);
+      }
+
+      toast.success('Payment method updated');
       setEditing(null);
       fetchMethods();
     } catch (err) {
       console.error('Failed to update method:', err);
+      toast.error('Failed to update payment method');
     } finally {
       setSaving(false);
     }
@@ -125,9 +165,17 @@ export default function PaymentMethods() {
     inactive: methods.filter((m) => !m.isActive).length,
   }), [methods]);
 
+  const usedProviders = useMemo(() => {
+    const set = new Set<string>();
+    methods.forEach((m) => (m.providers || []).forEach((p) => set.add(p.provider)));
+    return Array.from(set).sort();
+  }, [methods]);
+
   const filtered = useMemo(() => {
     return methods.filter((m) => {
-      if (providerFilter !== 'all' && m.provider !== providerFilter) return false;
+      if (providerFilter !== 'all' && !(m.providers || []).some((p) => p.provider === providerFilter)) {
+        return false;
+      }
       if (statusFilter === 'active' && (!m.isActive || m.isMaintenance)) return false;
       if (statusFilter === 'inactive' && m.isActive) return false;
       if (statusFilter === 'maintenance' && !m.isMaintenance) return false;
@@ -143,15 +191,10 @@ export default function PaymentMethods() {
     });
   }, [methods, search, providerFilter, statusFilter]);
 
-  const grouped = filtered.reduce<Record<string, PaymentMethod[]>>((acc, m) => {
+  const grouped = filtered.reduce<Record<string, AdminPaymentMethod[]>>((acc, m) => {
     (acc[m.type] = acc[m.type] || []).push(m);
     return acc;
   }, {});
-
-  const usedProviders = useMemo(() => {
-    const set = new Set(methods.map((m) => m.provider));
-    return Array.from(set).sort();
-  }, [methods]);
 
   if (loading) {
     return (
@@ -170,7 +213,7 @@ export default function PaymentMethods() {
       <div className="page-content">
       <div className="mb-6">
         <h1 className="page-title">Payment Methods</h1>
-        <p className="text-gray-500 mt-1 text-sm">Configure provider, fees, and availability per method.</p>
+        <p className="text-gray-500 mt-1 text-sm">Configure fees, availability, and the ordered provider list per method.</p>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
@@ -230,7 +273,7 @@ export default function PaymentMethods() {
                   <tr className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                     <th className="px-4 py-3">Code</th>
                     <th className="px-4 py-3">Name</th>
-                    <th className="px-4 py-3">Provider</th>
+                    <th className="px-4 py-3">Providers</th>
                     <th className="px-4 py-3">Fee</th>
                     <th className="px-4 py-3">Amount Range</th>
                     <th className="px-4 py-3">Status</th>
@@ -239,13 +282,11 @@ export default function PaymentMethods() {
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {items.map((m) => (
-                    <tr key={m.id} className="hover:bg-gray-50">
+                    <tr key={`${m.type}-${m.code}-${m.id}`} className="hover:bg-gray-50 align-top">
                       <td className="px-4 py-3 font-mono text-gray-700">{m.code}</td>
                       <td className="px-4 py-3 text-gray-900">{m.name}</td>
                       <td className="px-4 py-3">
-                        <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs font-medium">
-                          {m.providerDisplayName || providerLabel(m.provider)}
-                        </span>
+                        <ProviderSubList providers={m.providers} />
                       </td>
                       <td className="px-4 py-3 text-gray-600">
                         {m.feeType === 'flat'
@@ -299,17 +340,78 @@ export default function PaymentMethods() {
               </button>
             </div>
             <div className="p-5 space-y-4 overflow-y-auto">
+              {/* Providers — ordered binding list (priority + per-provider toggles) */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Provider</label>
-                <select
-                  value={editing.provider}
-                  onChange={(e) => setEditing({ ...editing, provider: e.target.value })}
-                  className="input-field"
-                >
-                  {PROVIDER_VALUES.map((p) => (
-                    <option key={p} value={p}>{providerLabel(p)}</option>
-                  ))}
-                </select>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Providers <span className="text-gray-400 font-normal">(priority order — top is preferred)</span>
+                </label>
+                {bindings.length === 0 ? (
+                  <p className="text-xs text-gray-400 py-2">No providers bound to this method.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {bindings.map((b, i) => (
+                      <div key={b.provider} className="border border-gray-200 rounded-lg p-3">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            <span className="inline-flex items-center justify-center w-6 h-6 bg-gray-100 text-gray-500 rounded text-xs font-semibold">
+                              {i + 1}
+                            </span>
+                            <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs font-medium">
+                              {providerLabel(b.provider)}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => moveBinding(i, -1)}
+                              disabled={i === 0}
+                              className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded disabled:opacity-30 disabled:cursor-not-allowed"
+                              aria-label="Move up"
+                            >
+                              <ArrowUp className="w-4 h-4" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => moveBinding(i, 1)}
+                              disabled={i === bindings.length - 1}
+                              className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded disabled:opacity-30 disabled:cursor-not-allowed"
+                              aria-label="Move down"
+                            >
+                              <ArrowDown className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap gap-4 mt-2">
+                          <label className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={b.isActive}
+                              onChange={(e) => updateBinding(b.provider, { isActive: e.target.checked })}
+                            />
+                            <span className="text-sm text-gray-700">Active</span>
+                          </label>
+                          <label className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={b.isMaintenance}
+                              onChange={(e) => updateBinding(b.provider, { isMaintenance: e.target.checked })}
+                            />
+                            <span className="text-sm text-gray-700">Maintenance</span>
+                          </label>
+                        </div>
+                        {b.isMaintenance && (
+                          <input
+                            type="text"
+                            value={b.maintenanceMessage || ''}
+                            onChange={(e) => updateBinding(b.provider, { maintenanceMessage: e.target.value })}
+                            className="input-field mt-2 text-sm"
+                            placeholder="Maintenance message (optional)"
+                          />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -457,6 +559,36 @@ export default function PaymentMethods() {
       </div>
     </Layout>
     </>
+  );
+}
+
+// ProviderSubList renders the ordered provider bindings for a method with a
+// compact per-provider active/maintenance indicator.
+function ProviderSubList({ providers }: { providers: ProviderBinding[] }) {
+  const ordered = [...(providers || [])].sort((a, b) => a.priority - b.priority);
+  if (ordered.length === 0) {
+    return <span className="text-xs text-gray-400">No providers</span>;
+  }
+  return (
+    <ul className="space-y-1">
+      {ordered.map((p, i) => (
+        <li key={p.id ?? `${p.provider}-${i}`} className="flex items-center gap-2">
+          <span className="text-[10px] text-gray-400 font-mono w-4">{i + 1}.</span>
+          <span className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-xs font-medium">
+            {providerLabel(p.provider)}
+          </span>
+          {p.isMaintenance ? (
+            <span className="inline-flex items-center gap-1 text-amber-600 text-[11px]">
+              <AlertCircle className="w-3 h-3" /> Maintenance
+            </span>
+          ) : p.isActive ? (
+            <span className="text-emerald-600 text-[11px]">Active</span>
+          ) : (
+            <span className="text-gray-400 text-[11px]">Inactive</span>
+          )}
+        </li>
+      ))}
+    </ul>
   );
 }
 
