@@ -10,6 +10,7 @@ interface PaymentMethod {
   code: string;
   name: string;
   provider: string;
+  providerDisplayName?: string;
   feeType: 'flat' | 'percent';
   feeFlat: number;
   feePercent: number;
@@ -25,7 +26,25 @@ interface PaymentMethod {
   paymentInstruction?: any;
 }
 
-const PROVIDERS = ['pakailink', 'dana_direct', 'midtrans', 'xendit', 'bca_direct', 'bni_direct', 'mandiri_direct', 'bri_direct'];
+// Canonical provider list — pulled dynamically from the DB via usedProviders.
+// The display name shown in the dropdown uses providerDisplayName from the DB row.
+const PROVIDER_VALUES = ['pakailink', 'dana_direct', 'midtrans', 'xendit', 'ovo_direct', 'bca_direct', 'bni_direct', 'mandiri_direct', 'bri_direct', 'bnc_direct'];
+
+function providerLabel(provider: string): string {
+  const map: Record<string, string> = {
+    pakailink: 'Pakailink',
+    dana_direct: 'Dana',
+    midtrans: 'Midtrans',
+    xendit: 'Xendit',
+    ovo_direct: 'OVO',
+    bca_direct: 'BCA Direct',
+    bni_direct: 'BNI Direct',
+    mandiri_direct: 'Mandiri Direct',
+    bri_direct: 'BRI Direct',
+    bnc_direct: 'BNC Direct',
+  };
+  return map[provider] ?? provider;
+}
 
 export default function PaymentMethods() {
   const [methods, setMethods] = useState<PaymentMethod[]>([]);
@@ -180,7 +199,7 @@ export default function PaymentMethods() {
           >
             <option value="all">All providers</option>
             {usedProviders.map((p) => (
-              <option key={p} value={p}>{p}</option>
+              <option key={p} value={p}>{providerLabel(p)}</option>
             ))}
           </select>
           <select
@@ -225,7 +244,7 @@ export default function PaymentMethods() {
                       <td className="px-4 py-3 text-gray-900">{m.name}</td>
                       <td className="px-4 py-3">
                         <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs font-medium">
-                          {m.provider}
+                          {m.providerDisplayName || providerLabel(m.provider)}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-gray-600">
@@ -287,8 +306,8 @@ export default function PaymentMethods() {
                   onChange={(e) => setEditing({ ...editing, provider: e.target.value })}
                   className="input-field"
                 >
-                  {PROVIDERS.map((p) => (
-                    <option key={p} value={p}>{p}</option>
+                  {PROVIDER_VALUES.map((p) => (
+                    <option key={p} value={p}>{providerLabel(p)}</option>
                   ))}
                 </select>
               </div>
