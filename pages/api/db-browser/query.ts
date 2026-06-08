@@ -1,21 +1,19 @@
 /**
  * POST /api/db-browser/query
- * Server-side only — runs a SQL query against the Postgres DB.
- * Protected by DB_BROWSER_PASSWORD env var (compare against x-db-pass header).
+ * Server-side DB proxy for the development DB browser.
+ * Protected by DB_BROWSER_PASSWORD.
  *
- * NOTE: READ-ONLY enforcement — only SELECT queries are allowed.
- * This endpoint is for temporary development inspection only.
+ * Body shapes:
+ *  { action: 'query',  sql: string }
+ *  { action: 'update', table: string, schema: string,
+ *    pkCol: string, pkVal: unknown,
+ *    col: string, val: string }
  */
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { Pool } from 'pg';
 import fs from 'fs';
 import path from 'path';
 
-/**
- * Load .env.local manually at runtime because pm2 does not inject it into
- * process.env. We read the file from the project root (cwd) each time the
- * pool is first created.
- */
 function loadEnvLocal(): Record<string, string> {
   const envPath = path.join(process.cwd(), '.env.local');
   try {
@@ -26,96 +24,64 @@ function loadEnvLocal(): Record<string, string> {
       if (!trimmed || trimmed.startsWith('#')) continue;
       const eqIdx = trimmed.indexOf('=');
       if (eqIdx < 0) continue;
-      const key = trimmed.slice(0, eqIdx).trim();
-      const val = trimmed.slice(eqIdx + 1).trim();
-      vars[key] = val;
+      vars[trimmed.slice(0, eqIdx).trim()] = trimmed.slice(eqIdx + 1).trim();
     }
     return vars;
-  } catch {
-    return {};
-  }
+  } catch { return {}; }
 }
 
 let pool: Pool | null = null;
-let poolCreatedAt = 0; // reset pool if it's stale (> 5 min) so env changes take effect
+let poolAt = 0;
 
 function getPool(): Pool {
-  // Reset pool after 5 min so a server restart picks up fresh env values
-  if (pool && (Date.now() - poolCreatedAt) > 5 * 60_000) {
-    pool.end().catch(() => {});
-    pool = null;
-  }
+  if (pool && (Date.now() - poolAt) > 5 * 60_000) { pool.end().catch(() => {}); pool = null; }
   if (pool) return pool;
 
-  // Merge .env.local into process.env fallback (pm2 doesn't inject .env.local)
-  const envLocal = loadEnvLocal();
-  const get = (key: string) => process.env[key] ?? envLocal[key];
-
-  const sslMode = get('DB_SSLMODE') ?? 'require';
-  const sslRootCert = get('DB_SSLROOTCERT');
-
-  let sslConfig: object | boolean = false;
+  const env = loadEnvLocal();
+  const g = (k: string) => process.env[k] ?? env[k];
+  const sslMode = g('DB_SSLMODE') ?? 'require';
+  const cert = g('DB_SSLROOTCERT');
+  let ssl: object | boolean = false;
   if (sslMode === 'verify-full' || sslMode === 'require') {
-    const certContent = sslRootCert
-      ? (() => { try { return fs.readFileSync(sslRootCert).toString(); } catch { return undefined; } })()
-      : undefined;
-    sslConfig = {
+    ssl = {
       rejectUnauthorized: sslMode === 'verify-full',
-      ...(certContent ? { ca: certContent } : {}),
+      ...(cert ? { ca: (() => { try { return fs.readFileSync(cert).toString(); } catch { return undefined; } })() } : {}),
     };
   }
 
   pool = new Pool({
-    host:     get('DB_HOST'),
-    port:     parseInt(get('DB_PORT') || '5432'),
-    user:     get('DB_USER'),
-    password: get('DB_PASSWORD'),
-    database: get('DB_NAME'),
-    ssl:      sslConfig,
-    max:      2,
-    idleTimeoutMillis: 10_000,
-    connectionTimeoutMillis: 8_000,
+    host: g('DB_HOST'), port: parseInt(g('DB_PORT') || '5432'),
+    user: g('DB_USER'), password: g('DB_PASSWORD'), database: g('DB_NAME'),
+    ssl, max: 2, idleTimeoutMillis: 10_000, connectionTimeoutMillis: 8_000,
   });
-  poolCreatedAt = Date.now();
+  poolAt = Date.now();
   return pool;
 }
 
-type Resp = {
-  ok: boolean;
-  rows?: Record<string, unknown>[];
-  fields?: { name: string; dataTypeID: number }[];
-  rowCount?: number;
-  error?: string;
-};
+type Resp = { ok: boolean; rows?: Record<string, unknown>[]; fields?: { name: string; dataTypeID: number }[]; rowCount?: number; error?: string; };
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse<Resp>) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ ok: false, error: 'Method not allowed' });
-  }
+  if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'Method not allowed' });
 
-  // Password check — also read from .env.local if not in process.env
-  const envLocal = loadEnvLocal();
-  const get = (key: string) => process.env[key] ?? envLocal[key];
-  const pass = get('DB_BROWSER_PASSWORD');
+  const env = loadEnvLocal();
+  const g = (k: string) => process.env[k] ?? env[k];
+  const pass = g('DB_BROWSER_PASSWORD');
   const provided = req.headers['x-db-pass'] as string | undefined;
-  if (!pass || !provided || provided !== pass) {
-    return res.status(401).json({ ok: false, error: 'Unauthorized' });
-  }
+  if (!pass || !provided || provided !== pass) return res.status(401).json({ ok: false, error: 'Unauthorized' });
 
-  const { sql } = req.body as { sql?: string };
-  if (!sql || typeof sql !== 'string') {
-    return res.status(400).json({ ok: false, error: 'sql is required' });
-  }
+  const body = req.body as Record<string, unknown>;
+  const action = (body.action as string) || 'query';
 
-  // Only SELECT is allowed — simple guard
-  const normalized = sql.trim().toUpperCase();
-  if (!normalized.startsWith('SELECT') && !normalized.startsWith('WITH') && !normalized.startsWith('SHOW') && !normalized.startsWith('\\')) {
-    return res.status(403).json({ ok: false, error: 'Only SELECT / WITH queries are permitted' });
-  }
-
+  const client = await getPool().connect();
   try {
-    const client = await getPool().connect();
-    try {
+    // ── SELECT / custom query ──────────────────────────────────────────────
+    if (action === 'query') {
+      const sql = body.sql as string | undefined;
+      if (!sql) return res.status(400).json({ ok: false, error: 'sql is required' });
+      const norm = sql.trim().toUpperCase();
+      if (!norm.startsWith('SELECT') && !norm.startsWith('WITH') && !norm.startsWith('SHOW')) {
+        return res.status(403).json({ ok: false, error: 'Only SELECT/WITH queries are permitted' });
+      }
       const result = await client.query(sql);
       return res.status(200).json({
         ok: true,
@@ -123,11 +89,33 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
         fields: result.fields?.map(f => ({ name: f.name, dataTypeID: f.dataTypeID })),
         rowCount: result.rowCount ?? result.rows.length,
       });
-    } finally {
-      client.release();
     }
+
+    // ── UPDATE single cell ────────────────────────────────────────────────
+    if (action === 'update') {
+      const { schema, table, pkCol, pkVal, col, val } = body as {
+        schema: string; table: string; pkCol: string; pkVal: unknown; col: string; val: string;
+      };
+      if (!schema || !table || !pkCol || pkVal === undefined || !col) {
+        return res.status(400).json({ ok: false, error: 'schema, table, pkCol, pkVal, col are required' });
+      }
+      // Sanitize identifiers — only allow word chars and hyphens
+      const safe = (s: string) => /^[\w\-]+$/.test(s) ? s : null;
+      if (!safe(schema) || !safe(table) || !safe(pkCol) || !safe(col)) {
+        return res.status(400).json({ ok: false, error: 'Invalid identifier' });
+      }
+      // val == '' treated as NULL, 'NULL' also treated as NULL
+      const newVal = (val === 'NULL' || val === null) ? null : val;
+      const sql = `UPDATE "${schema}"."${table}" SET "${col}" = $1 WHERE "${pkCol}" = $2`;
+      await client.query(sql, [newVal, pkVal]);
+      return res.status(200).json({ ok: true, rowCount: 1 });
+    }
+
+    return res.status(400).json({ ok: false, error: `Unknown action: ${action}` });
+
   } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : String(err);
-    return res.status(500).json({ ok: false, error: msg });
+    return res.status(500).json({ ok: false, error: err instanceof Error ? err.message : String(err) });
+  } finally {
+    client.release();
   }
 }
