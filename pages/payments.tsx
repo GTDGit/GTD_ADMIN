@@ -187,12 +187,10 @@ export default function Payments() {
           <select value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }} className="input-field">
             <option value="">All statuses</option>
             <option value="Pending">Pending</option>
-            <option value="Paid">Paid</option>
+            <option value="Success">Success</option>
             <option value="Expired">Expired</option>
             <option value="Cancelled">Cancelled</option>
             <option value="Failed">Failed</option>
-            <option value="Refunded">Refunded</option>
-            <option value="Partial_Refund">Partial Refund</option>
           </select>
           <select value={type} onChange={(e) => { setType(e.target.value); setPage(1); }} className="input-field">
             <option value="">All types</option>

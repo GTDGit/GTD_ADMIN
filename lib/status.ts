@@ -8,7 +8,6 @@ export function getStatusStyle(status: string): string {
     active:     'bg-emerald-50 text-emerald-700',
     success:    'bg-emerald-50 text-emerald-700',
     connected:  'bg-emerald-50 text-emerald-700',
-    paid:       'bg-emerald-50 text-emerald-700',
     // Failed / Inactive
     inactive:   'bg-red-50 text-red-700',
     failed:     'bg-red-50 text-red-700',
@@ -20,8 +19,6 @@ export function getStatusStyle(status: string): string {
     expired:    'bg-gray-100 text-gray-600',
     cancelled:  'bg-gray-100 text-gray-600',
     disabled:   'bg-gray-100 text-gray-600',
-    // Refunded
-    refunded:   'bg-purple-50 text-purple-700',
   };
   return map[status.toLowerCase()] ?? 'bg-gray-100 text-gray-600';
 }
