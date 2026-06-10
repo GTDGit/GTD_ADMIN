@@ -218,38 +218,6 @@ export default function Clients() {
                   </div>
                 </div>
 
-                {/* Webhook signing key (HMAC-SHA256 secret for outbound payment webhooks) */}
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">Webhook Signing Key</p>
-                    <p className="font-mono text-sm text-gray-700 truncate">
-                      {client.webhookKey ? `${client.webhookKey.substring(0, 36)}...` : 'Not generated'}
-                    </p>
-                  </div>
-                  <div className="flex gap-1 ml-3">
-                    {client.webhookKey && (
-                      <button
-                        onClick={() => copyToClipboard(client.webhookKey, `whsec-${client.id}`)}
-                        className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
-                        title="Copy"
-                      >
-                        {copiedKey === `whsec-${client.id}` ? (
-                          <Check className="w-4 h-4 text-emerald-600" />
-                        ) : (
-                          <Copy className="w-4 h-4 text-gray-400" />
-                        )}
-                      </button>
-                    )}
-                    <button
-                      onClick={() => handleRegenerate(client.id, 'webhook')}
-                      className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
-                      title="Regenerate webhook signing key"
-                    >
-                      <Key className="w-4 h-4 text-gray-400" />
-                    </button>
-                  </div>
-                </div>
-
                 {/* Payment webhook secret */}
                 {(client.paymentCallbackSecret || client.paymentCallbackUrl) && (
                   <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
