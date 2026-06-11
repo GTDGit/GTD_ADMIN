@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import Head from 'next/head';
 import Layout from '@/components/Layout';
 import { useToast } from '@/components/Toast';
@@ -17,9 +17,25 @@ import {
   Check,
   AlertCircle,
   Search,
-  ArrowUp,
-  ArrowDown,
+  GripVertical,
 } from 'lucide-react';
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable,
+  arrayMove,
+  sortableKeyboardCoordinates,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 // Canonical provider display names. The set of providers shown per method comes
 // from the method's `providers` bindings (the Method_Provider_Mapping).
@@ -37,6 +53,89 @@ function providerLabel(provider: string): string {
     bnc_direct: 'BNC Direct',
   };
   return map[provider] ?? provider;
+}
+
+// A single draggable provider binding row. Drag handle on the left reorders the
+// list (priority). The order badge reflects the live list position (1-based).
+function SortableBindingRow({
+  binding,
+  index,
+  updateBinding,
+}: {
+  binding: BindingUpdate;
+  index: number;
+  updateBinding: (provider: string, patch: Partial<BindingUpdate>) => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: binding.provider });
+
+  const style: CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`border border-gray-200 rounded-lg p-3 bg-white ${
+        isDragging ? 'opacity-50 shadow-lg' : ''
+      }`}
+    >
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            className="p-1 text-gray-400 hover:text-gray-700 cursor-grab active:cursor-grabbing touch-none"
+            aria-label="Drag to reorder"
+            {...attributes}
+            {...listeners}
+          >
+            <GripVertical className="w-4 h-4" />
+          </button>
+          <span className="inline-flex items-center justify-center w-6 h-6 bg-gray-100 text-gray-500 rounded text-xs font-semibold">
+            {index + 1}
+          </span>
+          <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs font-medium">
+            {providerLabel(binding.provider)}
+          </span>
+        </div>
+      </div>
+      <div className="flex flex-wrap gap-4 mt-2">
+        <label className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={binding.isActive}
+            onChange={(e) => updateBinding(binding.provider, { isActive: e.target.checked })}
+          />
+          <span className="text-sm text-gray-700">Active</span>
+        </label>
+        <label className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={binding.isMaintenance}
+            onChange={(e) => updateBinding(binding.provider, { isMaintenance: e.target.checked })}
+          />
+          <span className="text-sm text-gray-700">Maintenance</span>
+        </label>
+      </div>
+      {binding.isMaintenance && (
+        <input
+          type="text"
+          value={binding.maintenanceMessage || ''}
+          onChange={(e) => updateBinding(binding.provider, { maintenanceMessage: e.target.value })}
+          className="input-field mt-2 text-sm"
+          placeholder="Maintenance message (optional)"
+        />
+      )}
+    </div>
+  );
 }
 
 export default function PaymentMethods() {
@@ -93,14 +192,21 @@ export default function PaymentMethods() {
     );
   };
 
-  // Move a binding up/down in priority order; priorities are re-sequenced on save.
-  const moveBinding = (index: number, dir: -1 | 1) => {
+  // Drag-and-drop reorder: list order = priority order (top is preferred).
+  // Priorities are re-sequenced (10, 20, 30...) on save in handleSave.
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  const handleDragEnd = (e: DragEndEvent) => {
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
     setBindings((prev) => {
-      const next = [...prev];
-      const target = index + dir;
-      if (target < 0 || target >= next.length) return prev;
-      [next[index], next[target]] = [next[target], next[index]];
-      return next;
+      const oldIndex = prev.findIndex((b) => b.provider === active.id);
+      const newIndex = prev.findIndex((b) => b.provider === over.id);
+      if (oldIndex === -1 || newIndex === -1) return prev;
+      return arrayMove(prev, oldIndex, newIndex);
     });
   };
 
@@ -348,69 +454,30 @@ export default function PaymentMethods() {
                 {bindings.length === 0 ? (
                   <p className="text-xs text-gray-400 py-2">No providers bound to this method.</p>
                 ) : (
-                  <div className="space-y-2">
-                    {bindings.map((b, i) => (
-                      <div key={b.provider} className="border border-gray-200 rounded-lg p-3">
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2">
-                            <span className="inline-flex items-center justify-center w-6 h-6 bg-gray-100 text-gray-500 rounded text-xs font-semibold">
-                              {i + 1}
-                            </span>
-                            <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs font-medium">
-                              {providerLabel(b.provider)}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <button
-                              type="button"
-                              onClick={() => moveBinding(i, -1)}
-                              disabled={i === 0}
-                              className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded disabled:opacity-30 disabled:cursor-not-allowed"
-                              aria-label="Move up"
-                            >
-                              <ArrowUp className="w-4 h-4" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => moveBinding(i, 1)}
-                              disabled={i === bindings.length - 1}
-                              className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded disabled:opacity-30 disabled:cursor-not-allowed"
-                              aria-label="Move down"
-                            >
-                              <ArrowDown className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </div>
-                        <div className="flex flex-wrap gap-4 mt-2">
-                          <label className="flex items-center gap-2">
-                            <input
-                              type="checkbox"
-                              checked={b.isActive}
-                              onChange={(e) => updateBinding(b.provider, { isActive: e.target.checked })}
+                  <>
+                    <p className="text-xs text-gray-400 mb-2">Geser baris untuk mengatur urutan — provider teratas dipakai duluan.</p>
+                    <DndContext
+                      sensors={sensors}
+                      collisionDetection={closestCenter}
+                      onDragEnd={handleDragEnd}
+                    >
+                      <SortableContext
+                        items={bindings.map((b) => b.provider)}
+                        strategy={verticalListSortingStrategy}
+                      >
+                        <div className="space-y-2">
+                          {bindings.map((b, i) => (
+                            <SortableBindingRow
+                              key={b.provider}
+                              binding={b}
+                              index={i}
+                              updateBinding={updateBinding}
                             />
-                            <span className="text-sm text-gray-700">Active</span>
-                          </label>
-                          <label className="flex items-center gap-2">
-                            <input
-                              type="checkbox"
-                              checked={b.isMaintenance}
-                              onChange={(e) => updateBinding(b.provider, { isMaintenance: e.target.checked })}
-                            />
-                            <span className="text-sm text-gray-700">Maintenance</span>
-                          </label>
+                          ))}
                         </div>
-                        {b.isMaintenance && (
-                          <input
-                            type="text"
-                            value={b.maintenanceMessage || ''}
-                            onChange={(e) => updateBinding(b.provider, { maintenanceMessage: e.target.value })}
-                            className="input-field mt-2 text-sm"
-                            placeholder="Maintenance message (optional)"
-                          />
-                        )}
-                      </div>
-                    ))}
-                  </div>
+                      </SortableContext>
+                    </DndContext>
+                  </>
                 )}
               </div>
 
