@@ -9,6 +9,7 @@ interface Payment {
   id: number;
   paymentId: string;
   referenceId: string;
+  partnerRef?: string;
   clientId: number;
   paymentType: string;
   paymentCode: string;
@@ -288,6 +289,7 @@ export default function Payments() {
                 <Info label="Reference" value={selected.referenceId} mono />
                 <Info label="Client ID" value={String(selected.clientId)} />
                 <Info label="Status" value={selected.status} />
+                <Info label="Partner Ref" value={selected.partnerRef || '—'} mono />
                 <Info label="Provider Ref" value={selected.providerRef || '—'} mono />
                 <Info label="Amount" value={`Rp ${selected.amount.toLocaleString('id-ID')}`} />
                 <Info label="Fee" value={`Rp ${selected.fee.toLocaleString('id-ID')}`} />
