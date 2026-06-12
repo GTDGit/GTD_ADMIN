@@ -19,6 +19,9 @@ export function getStatusStyle(status: string): string {
     expired:    'bg-gray-100 text-gray-600',
     cancelled:  'bg-gray-100 text-gray-600',
     disabled:   'bg-gray-100 text-gray-600',
+    // Reconciliation
+    open:       'bg-amber-50 text-amber-700',
+    resolved:   'bg-emerald-50 text-emerald-700',
   };
   return map[status.toLowerCase()] ?? 'bg-gray-100 text-gray-600';
 }

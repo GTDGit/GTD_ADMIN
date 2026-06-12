@@ -138,3 +138,77 @@ export async function updateMethodProviders(
   );
   return data?.data ?? [];
 }
+
+// ---------------------------------------------------------------------------
+// Reconciliation (verify-by-inquiry mismatches)
+//
+// A reconciliation row is created when an inbound provider webhook disagreed
+// with the authoritative provider inquiry (status and/or amount). Open rows
+// are frozen — the payment is not transitioned and no client callback is sent
+// until the row is resolved (automatically by the worker/next webhook, or
+// manually by an admin here).
+//   GET  /v1/admin/reconciliations           -> { reconciliations, pagination }
+//   GET  /v1/admin/reconciliations/{id}       -> reconciliation
+//   POST /v1/admin/reconciliations/{id}/resolve { status, note }
+// ---------------------------------------------------------------------------
+
+export interface Reconciliation {
+  id: number;
+  paymentId: string;
+  provider: string;
+  reason: string;
+  webhookStatus?: string;
+  inquiryStatus?: string;
+  webhookAmount?: number;
+  inquiryAmount?: number;
+  expectedAmount?: number;
+  webhookPayload?: any;
+  inquiryPayload?: any;
+  status: string;
+  resolvedStatus?: string;
+  resolvedBy?: string;
+  resolutionNote?: string;
+  createdAt: string;
+  updatedAt: string;
+  resolvedAt?: string;
+}
+
+export interface ReconciliationListParams {
+  status?: string;
+  provider?: string;
+  reason?: string;
+  search?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface ReconciliationListResult {
+  reconciliations: Reconciliation[];
+  totalItems: number;
+}
+
+// GET /v1/admin/reconciliations — filtered list ordered by created_at DESC.
+export async function fetchReconciliations(
+  params: ReconciliationListParams
+): Promise<ReconciliationListResult> {
+  const { data } = await api.get('/v1/admin/reconciliations', { params });
+  return {
+    reconciliations: data?.data?.reconciliations ?? [],
+    totalItems: data?.data?.pagination?.totalItems ?? 0,
+  };
+}
+
+// GET /v1/admin/reconciliations/{id} — single reconciliation.
+export async function getReconciliation(id: number): Promise<Reconciliation> {
+  const { data } = await api.get(`/v1/admin/reconciliations/${id}`);
+  return data?.data;
+}
+
+// POST /v1/admin/reconciliations/{id}/resolve — apply a final status to the
+// payment, forward to the client, and close the row.
+export async function resolveReconciliation(
+  id: number,
+  body: { status: string; note?: string }
+): Promise<void> {
+  await api.post(`/v1/admin/reconciliations/${id}/resolve`, body);
+}

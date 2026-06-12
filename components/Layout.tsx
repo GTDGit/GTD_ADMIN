@@ -14,6 +14,7 @@ import {
   Wallet,
   Send,
   Building2,
+  Scale,
 } from 'lucide-react';
 
 interface LayoutProps {
@@ -53,6 +54,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { href: '/payments', icon: CreditCard, label: 'Payments' },
       { href: '/payment-methods', icon: Wallet, label: 'Methods' },
+      { href: '/reconciliation', icon: Scale, label: 'Reconciliation' },
     ],
   },
   {
