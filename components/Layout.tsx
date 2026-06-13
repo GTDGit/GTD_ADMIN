@@ -60,7 +60,7 @@ const NAV_GROUPS: NavGroup[] = [
   {
     title: 'Disbursement',
     items: [
-      { href: '/transfers', icon: Send, label: 'Transfers' },
+      { href: '/payouts', icon: Send, label: 'Payouts' },
       { href: '/disbursement-methods', icon: Building2, label: 'Methods' },
     ],
   },
