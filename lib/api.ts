@@ -212,3 +212,140 @@ export async function resolveReconciliation(
 ): Promise<void> {
   await api.post(`/v1/admin/reconciliations/${id}/resolve`, body);
 }
+
+// ---------------------------------------------------------------------------
+// Static QRIS merchants + payments
+//
+// The gateway owns merchant CRUD and read-only payment listing. storeId is
+// always entered manually (it identifies the merchant on inbound webhooks);
+// NMID, terminalId, name, and city are parsed automatically from qrisString.
+// Pakailink merchants can request the QR string via the api proxy:
+//   GET  /v1/admin/qris/merchants                       -> { items, pagination }
+//   POST /v1/admin/qris/merchants                       -> merchant
+//   GET  /v1/admin/qris/merchants/{id}                  -> merchant
+//   PUT  /v1/admin/qris/merchants/{id}                  -> merchant
+//   POST /v1/admin/qris/merchants/{id}/pakailink-generate -> merchant
+//   GET  /v1/admin/qris/payments                        -> { items, pagination }
+// ---------------------------------------------------------------------------
+
+export type QRISProvider = 'pakailink' | 'nobu';
+
+export interface QRISMerchant {
+  id: number;
+  clientId?: number;
+  provider: QRISProvider;
+  merchantName?: string;
+  merchantCity?: string;
+  merchantCategoryCode?: string;
+  nmid?: string;
+  storeId: string;
+  terminalId?: string;
+  qrisString?: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface QRISPayment {
+  id: number;
+  qrisMerchantId?: number;
+  provider: QRISProvider;
+  referenceNo: string;
+  partnerReferenceNo?: string;
+  rrn?: string;
+  paymentReferenceNo?: string;
+  issuerId?: string;
+  storeId: string;
+  terminalId?: string;
+  amount: number;
+  feeAmount?: number;
+  nettAmount?: number;
+  payerName?: string;
+  payerPhone?: string;
+  status: string;
+  paidAt?: string;
+  createdAt: string;
+}
+
+export interface Pagination {
+  page: number;
+  limit: number;
+  totalItems: number;
+  totalPages: number;
+}
+
+export interface QRISMerchantListParams {
+  provider?: string;
+  clientId?: number;
+  status?: string;
+  search?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface QRISMerchantUpsertBody {
+  clientId?: number | null;
+  provider: string;
+  storeId: string;
+  terminalId?: string;
+  qrisString?: string;
+  status?: string;
+  merchantName?: string;
+  merchantCity?: string;
+}
+
+export interface QRISPaymentListParams {
+  provider?: string;
+  qrisMerchantId?: number;
+  storeId?: string;
+  startDate?: string;
+  endDate?: string;
+  search?: string;
+  page?: number;
+  limit?: number;
+}
+
+export async function fetchQRISMerchants(
+  params: QRISMerchantListParams
+): Promise<{ items: QRISMerchant[]; pagination: Pagination }> {
+  const { data } = await api.get('/v1/admin/qris/merchants', { params });
+  return {
+    items: data?.data?.items ?? [],
+    pagination: data?.data?.pagination ?? { page: 1, limit: 20, totalItems: 0, totalPages: 0 },
+  };
+}
+
+export async function getQRISMerchant(id: number): Promise<QRISMerchant> {
+  const { data } = await api.get(`/v1/admin/qris/merchants/${id}`);
+  return data?.data;
+}
+
+export async function createQRISMerchant(body: QRISMerchantUpsertBody): Promise<QRISMerchant> {
+  const { data } = await api.post('/v1/admin/qris/merchants', body);
+  return data?.data;
+}
+
+export async function updateQRISMerchant(
+  id: number,
+  body: QRISMerchantUpsertBody
+): Promise<QRISMerchant> {
+  const { data } = await api.put(`/v1/admin/qris/merchants/${id}`, body);
+  return data?.data;
+}
+
+// POST .../pakailink-generate — drives the api proxy to register+generate the
+// static QR, persists it, and returns the updated merchant with parsed fields.
+export async function requestPakailinkQR(id: number): Promise<QRISMerchant> {
+  const { data } = await api.post(`/v1/admin/qris/merchants/${id}/pakailink-generate`);
+  return data?.data;
+}
+
+export async function fetchQRISPayments(
+  params: QRISPaymentListParams
+): Promise<{ items: QRISPayment[]; pagination: Pagination }> {
+  const { data } = await api.get('/v1/admin/qris/payments', { params });
+  return {
+    items: data?.data?.items ?? [],
+    pagination: data?.data?.pagination ?? { page: 1, limit: 20, totalItems: 0, totalPages: 0 },
+  };
+}

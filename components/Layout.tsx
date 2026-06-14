@@ -15,6 +15,7 @@ import {
   Send,
   Building2,
   Scale,
+  QrCode,
 } from 'lucide-react';
 
 interface LayoutProps {
@@ -62,6 +63,13 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { href: '/payouts', icon: Send, label: 'Payouts' },
       { href: '/disbursement-methods', icon: Building2, label: 'Methods' },
+    ],
+  },
+  {
+    title: 'QRIS',
+    items: [
+      { href: '/qris-merchants', icon: QrCode, label: 'Merchants' },
+      { href: '/qris-payments', icon: CreditCard, label: 'Payments' },
     ],
   },
 ];
