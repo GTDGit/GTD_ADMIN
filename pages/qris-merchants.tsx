@@ -21,7 +21,7 @@ import {
 import { getStatusStyle } from '@/lib/status';
 
 const EMPTY_FORM: QRISMerchantUpsertBody = {
-  provider: 'pakailink',
+  provider: 'nobu',
   storeId: '',
   terminalId: 'GERBANG01',
   qrisString: '',
@@ -158,7 +158,6 @@ export default function QRISMerchantsPage() {
               </div>
               <select value={provider} onChange={(e) => { setProvider(e.target.value); setPage(1); }} className="input-field">
                 <option value="">All providers</option>
-                <option value="pakailink">Pakailink</option>
                 <option value="nobu">Nobu</option>
               </select>
               <select value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }} className="input-field">
@@ -255,7 +254,6 @@ export default function QRISMerchantsPage() {
                         disabled={!!editing}
                         className="input-field disabled:bg-gray-50"
                       >
-                        <option value="pakailink">Pakailink</option>
                         <option value="nobu">Nobu</option>
                       </select>
                     </Field>

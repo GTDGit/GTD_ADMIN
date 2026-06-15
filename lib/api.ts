@@ -233,7 +233,7 @@ export async function resolveReconciliation(
 //   POST /v1/admin/qris/batches/{id}/sent               -> ok
 // ---------------------------------------------------------------------------
 
-export type QRISProvider = 'pakailink' | 'nobu';
+export type QRISProvider = 'nobu';
 
 export interface QRISMerchant {
   id: number;

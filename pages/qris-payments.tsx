@@ -70,7 +70,7 @@ export default function QRISPaymentsPage() {
             <div>
               <h1 className="page-title">QRIS Payments</h1>
               <p className="text-gray-500 mt-1 text-sm">
-                Successful static-QRIS payments received via provider webhooks (Pakailink &amp; Nobu).
+                Successful static-QRIS payments received via provider webhooks (Nobu).
               </p>
             </div>
             <button onClick={() => load()} className="btn-secondary flex items-center gap-2">
@@ -93,7 +93,6 @@ export default function QRISPaymentsPage() {
               </div>
               <select value={provider} onChange={(e) => { setProvider(e.target.value); setPage(1); }} className="input-field">
                 <option value="">All providers</option>
-                <option value="pakailink">Pakailink</option>
                 <option value="nobu">Nobu</option>
               </select>
               <input
