@@ -6,7 +6,6 @@ import {
   fetchQRISMerchants,
   createQRISMerchant,
   updateQRISMerchant,
-  requestPakailinkQR,
   type QRISMerchant,
   type QRISMerchantUpsertBody,
 } from '@/lib/api';
@@ -18,7 +17,6 @@ import {
   Plus,
   ChevronLeft,
   ChevronRight,
-  Zap,
 } from 'lucide-react';
 import { getStatusStyle } from '@/lib/status';
 
@@ -47,7 +45,6 @@ export default function QRISMerchantsPage() {
   const [editing, setEditing] = useState<QRISMerchant | null>(null);
   const [form, setForm] = useState<QRISMerchantUpsertBody>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
-  const [generating, setGenerating] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -119,34 +116,6 @@ export default function QRISMerchantsPage() {
       toast.error(msg);
     } finally {
       setSaving(false);
-    }
-  };
-
-  // Pakailink-only: request the static QR string from the provider via the api
-  // proxy. Requires the merchant to already exist (it persists onto the row).
-  const handleGenerate = async () => {
-    if (!editing) {
-      toast.error('Save the merchant first, then request the QR');
-      return;
-    }
-    setGenerating(true);
-    try {
-      const updated = await requestPakailinkQR(editing.id);
-      setEditing(updated);
-      setForm((f) => ({
-        ...f,
-        qrisString: updated.qrisString ?? '',
-        merchantName: updated.merchantName ?? f.merchantName,
-        merchantCity: updated.merchantCity ?? f.merchantCity,
-        terminalId: updated.terminalId ?? f.terminalId,
-      }));
-      toast.success('QRIS string generated from Pakailink');
-      load();
-    } catch (err: any) {
-      const msg = err?.response?.data?.message || 'Failed to request QRIS from Pakailink';
-      toast.error(msg);
-    } finally {
-      setGenerating(false);
     }
   };
 
@@ -336,17 +305,6 @@ export default function QRISMerchantsPage() {
                       <label className="text-xs font-medium text-gray-400 uppercase tracking-wider">
                         QRIS String
                       </label>
-                      {form.provider === 'pakailink' && (
-                        <button
-                          onClick={handleGenerate}
-                          disabled={generating || !editing}
-                          title={editing ? '' : 'Save the merchant first'}
-                          className="btn-secondary py-1 px-2.5 flex items-center gap-1.5 text-xs disabled:opacity-40"
-                        >
-                          <Zap className="w-3.5 h-3.5" />
-                          {generating ? 'Requesting…' : 'Request QRIS ke Pakailink'}
-                        </button>
-                      )}
                     </div>
                     <textarea
                       value={form.qrisString}

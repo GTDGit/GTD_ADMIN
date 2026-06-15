@@ -219,13 +219,18 @@ export async function resolveReconciliation(
 // The gateway owns merchant CRUD and read-only payment listing. storeId is
 // always entered manually (it identifies the merchant on inbound webhooks);
 // NMID, terminalId, name, and city are parsed automatically from qrisString.
-// Pakailink merchants can request the QR string via the api proxy:
+// Nobu onboarding (registration intake, Excel batches, activation + QR
+// generation) is proxied to the api service:
 //   GET  /v1/admin/qris/merchants                       -> { items, pagination }
 //   POST /v1/admin/qris/merchants                       -> merchant
 //   GET  /v1/admin/qris/merchants/{id}                  -> merchant
 //   PUT  /v1/admin/qris/merchants/{id}                  -> merchant
-//   POST /v1/admin/qris/merchants/{id}/pakailink-generate -> merchant
 //   GET  /v1/admin/qris/payments                        -> { items, pagination }
+//   GET  /v1/admin/qris/registrations                   -> { items, pagination }
+//   POST /v1/admin/qris/registrations/{id}/activate     -> merchant
+//   GET  /v1/admin/qris/batches                         -> { items, pagination }
+//   GET  /v1/admin/qris/batches/{id}/download           -> xlsx (blob)
+//   POST /v1/admin/qris/batches/{id}/sent               -> ok
 // ---------------------------------------------------------------------------
 
 export type QRISProvider = 'pakailink' | 'nobu';
@@ -333,11 +338,99 @@ export async function updateQRISMerchant(
   return data?.data;
 }
 
-// POST .../pakailink-generate — drives the api proxy to register+generate the
-// static QR, persists it, and returns the updated merchant with parsed fields.
-export async function requestPakailinkQR(id: number): Promise<QRISMerchant> {
-  const { data } = await api.post(`/v1/admin/qris/merchants/${id}/pakailink-generate`);
+// POST .../qris/registrations/{id}/activate — drives the api service to
+// generate the static QR via Nobu (manual paste fallback), create the merchant,
+// and fire the qris.merchant.activated client webhook.
+export interface QRISRegistration {
+  id: number;
+  clientId?: number;
+  registrationRef: string;
+  ownerFullName: string;
+  ownerNik: string;
+  ownerPhone: string;
+  email: string;
+  businessName: string;
+  mcc: string;
+  addressStreet: string;
+  city: string;
+  omzetCategory: string;
+  qrisType: string;
+  riskCategory: string;
+  docBundleId?: number;
+  batchId?: number;
+  qrisMerchantId?: number;
+  status: 'pending_batch' | 'submitted' | 'activated' | 'rejected';
+  note?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface QRISRegistrationListParams {
+  status?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface QRISActivateBody {
+  subMerchantId?: string;
+  storeId: string;
+  terminalId?: string;
+  qrisString?: string;
+}
+
+export async function fetchQRISRegistrations(
+  params: QRISRegistrationListParams
+): Promise<{ items: QRISRegistration[]; pagination: Pagination }> {
+  const { data } = await api.get('/v1/admin/qris/registrations', { params });
+  return {
+    items: data?.data?.items ?? [],
+    pagination: data?.data?.pagination ?? { page: 1, limit: 20, totalItems: 0, totalPages: 0 },
+  };
+}
+
+export async function activateQRISRegistration(
+  id: number,
+  body: QRISActivateBody
+): Promise<QRISMerchant> {
+  const { data } = await api.post(`/v1/admin/qris/registrations/${id}/activate`, body);
   return data?.data;
+}
+
+export interface QRISBatch {
+  id: number;
+  batchDate: string;
+  batchSeq: number;
+  periodLabel?: string;
+  fileName: string;
+  registrationCount: number;
+  status: 'generated' | 'sent';
+  createdAt: string;
+}
+
+export async function fetchQRISBatches(
+  params: { page?: number; limit?: number }
+): Promise<{ items: QRISBatch[]; pagination: Pagination }> {
+  const { data } = await api.get('/v1/admin/qris/batches', { params });
+  return {
+    items: data?.data?.items ?? [],
+    pagination: data?.data?.pagination ?? { page: 1, limit: 50, totalItems: 0, totalPages: 0 },
+  };
+}
+
+// Streams the rendered Nobu Excel file as a blob for browser download.
+export async function downloadQRISBatch(id: number): Promise<{ blob: Blob; fileName: string }> {
+  const resp = await api.get(`/v1/admin/qris/batches/${id}/download`, { responseType: 'blob' });
+  let fileName = `nobu-qris-batch-${id}.xlsx`;
+  const cd: string | undefined = resp.headers?.['content-disposition'];
+  if (cd) {
+    const m = cd.match(/filename="?([^"]+)"?/);
+    if (m) fileName = m[1];
+  }
+  return { blob: resp.data as Blob, fileName };
+}
+
+export async function markQRISBatchSent(id: number): Promise<void> {
+  await api.post(`/v1/admin/qris/batches/${id}/sent`);
 }
 
 export async function fetchQRISPayments(

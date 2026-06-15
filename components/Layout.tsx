@@ -14,8 +14,11 @@ import {
   Wallet,
   Send,
   Building2,
+  Banknote,
   Scale,
   QrCode,
+  ClipboardList,
+  FileSpreadsheet,
 } from 'lucide-react';
 
 interface LayoutProps {
@@ -63,12 +66,15 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { href: '/payouts', icon: Send, label: 'Payouts' },
       { href: '/disbursement-methods', icon: Building2, label: 'Methods' },
+      { href: '/payout-methods', icon: Banknote, label: 'Fees' },
     ],
   },
   {
     title: 'QRIS',
     items: [
+      { href: '/qris-registrations', icon: ClipboardList, label: 'Registrations' },
       { href: '/qris-merchants', icon: QrCode, label: 'Merchants' },
+      { href: '/qris-batches', icon: FileSpreadsheet, label: 'Batches' },
       { href: '/qris-payments', icon: CreditCard, label: 'Payments' },
     ],
   },
