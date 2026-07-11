@@ -5,6 +5,7 @@ import { useToast } from '@/components/Toast';
 import {
   fetchQRISRegistrations,
   activateQRISRegistration,
+  rejectQRISRegistration,
   type QRISRegistration,
   type QRISActivateBody,
 } from '@/lib/api';
@@ -13,6 +14,7 @@ import {
   RefreshCw,
   X,
   CheckCircle2,
+  XCircle,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
@@ -37,6 +39,7 @@ export default function QRISRegistrationsPage() {
   const [selected, setSelected] = useState<QRISRegistration | null>(null);
   const [form, setForm] = useState<QRISActivateBody>(EMPTY_ACTIVATE);
   const [activating, setActivating] = useState(false);
+  const [rejecting, setRejecting] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -87,6 +90,34 @@ export default function QRISRegistrationsPage() {
       toast.error(msg);
     } finally {
       setActivating(false);
+    }
+  };
+
+  const canReject = (r: QRISRegistration) =>
+    r.status === 'pending_batch' || r.status === 'submitted';
+
+  const handleReject = async () => {
+    if (!selected || !canReject(selected)) return;
+    const note = window.prompt(
+      'Alasan penolakan (opsional). Catatan ini disimpan di registration note:',
+      selected.note || ''
+    );
+    // Cancelled prompt → abort.
+    if (note === null) return;
+    setRejecting(true);
+    try {
+      await rejectQRISRegistration(selected.id, { note: note.trim() || undefined });
+      toast.success('Registration ditolak');
+      setSelected(null);
+      load();
+    } catch (err: any) {
+      const msg =
+        err?.response?.data?.error?.message ||
+        err?.response?.data?.message ||
+        'Gagal menolak registration';
+      toast.error(msg);
+    } finally {
+      setRejecting(false);
     }
   };
 
@@ -205,6 +236,7 @@ export default function QRISRegistrationsPage() {
                     <Info label="Email" value={selected.email} />
                     <Info label="MCC" value={selected.mcc} mono />
                     <Info label="QRIS Type" value={selected.qrisType} />
+                    <Info label="Merchant Type" value={selected.merchantType || '—'} />
                     <Info label="Address" value={selected.addressStreet} />
                     <Info label="City" value={selected.city} />
                     <Info label="Omzet" value={selected.omzetCategory} />
@@ -268,8 +300,18 @@ export default function QRISRegistrationsPage() {
 
                 <div className="p-5 border-t border-gray-100 flex justify-end gap-2">
                   <button onClick={() => setSelected(null)} className="btn-secondary">Close</button>
+                  {canReject(selected) && (
+                    <button
+                      onClick={handleReject}
+                      disabled={rejecting || activating}
+                      className="btn-secondary text-red-600 border-red-200 hover:bg-red-50 disabled:opacity-50 flex items-center gap-1"
+                    >
+                      <XCircle className="w-4 h-4" />
+                      {rejecting ? 'Menolak…' : 'Reject'}
+                    </button>
+                  )}
                   {selected.status !== 'activated' && (
-                    <button onClick={handleActivate} disabled={activating} className="btn-primary disabled:opacity-50 flex items-center gap-1">
+                    <button onClick={handleActivate} disabled={activating || rejecting} className="btn-primary disabled:opacity-50 flex items-center gap-1">
                       <CheckCircle2 className="w-4 h-4" />
                       {activating ? 'Activating…' : 'Activate Merchant'}
                     </button>

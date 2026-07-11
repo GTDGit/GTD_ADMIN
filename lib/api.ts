@@ -228,6 +228,7 @@ export async function resolveReconciliation(
 //   GET  /v1/admin/qris/payments                        -> { items, pagination }
 //   GET  /v1/admin/qris/registrations                   -> { items, pagination }
 //   POST /v1/admin/qris/registrations/{id}/activate     -> merchant
+//   POST /v1/admin/qris/registrations/{id}/reject       -> registration
 //   GET  /v1/admin/qris/batches                         -> { items, pagination }
 //   GET  /v1/admin/qris/batches/{id}/download           -> xlsx (blob)
 //   POST /v1/admin/qris/batches/{id}/sent               -> ok
@@ -355,6 +356,7 @@ export interface QRISRegistration {
   city: string;
   omzetCategory: string;
   qrisType: string;
+  merchantType?: 'perorangan' | 'perusahaan' | string;
   riskCategory: string;
   docBundleId?: number;
   batchId?: number;
@@ -393,6 +395,20 @@ export async function activateQRISRegistration(
   body: QRISActivateBody
 ): Promise<QRISMerchant> {
   const { data } = await api.post(`/v1/admin/qris/registrations/${id}/activate`, body);
+  return data?.data;
+}
+
+export interface QRISRejectBody {
+  note?: string;
+}
+
+// POST .../qris/registrations/{id}/reject — marks a pending/submitted
+// registration as rejected with an optional operator note.
+export async function rejectQRISRegistration(
+  id: number,
+  body: QRISRejectBody = {}
+): Promise<QRISRegistration> {
+  const { data } = await api.post(`/v1/admin/qris/registrations/${id}/reject`, body);
   return data?.data;
 }
 
